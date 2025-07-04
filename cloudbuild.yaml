@@ -1,4 +1,3 @@
-  GNU nano 7.2                                                                                  cloudbuild.yaml                                                                                           
 steps:
 # 1. Instala las dependencias del proyecto
 - name: 'gcr.io/cloud-builders/npm'
@@ -7,3 +6,7 @@ steps:
 # 2. Despliega la aplicación a App Engine
 - name: 'gcr.io/cloud-builders/gcloud'
   args: ['app', 'deploy']
+
+# Esta sección debe estar al mismo nivel que "steps"
+options:
+  logging: CLOUD_LOGGING_ONLY
