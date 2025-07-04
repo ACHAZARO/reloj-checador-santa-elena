@@ -1,3 +1,4 @@
+  GNU nano 7.2                                                                                  cloudbuild.yaml                                                                                           
 steps:
 # 1. Instala las dependencias del proyecto
 - name: 'gcr.io/cloud-builders/npm'
