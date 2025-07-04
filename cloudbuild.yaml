@@ -1,0 +1,8 @@
+steps:
+# 1. Instala las dependencias del proyecto
+- name: 'gcr.io/cloud-builders/npm'
+  args: ['install']
+
+# 2. Despliega la aplicación a App Engine
+- name: 'gcr.io/cloud-builders/gcloud'
+  args: ['app', 'deploy']
