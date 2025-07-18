@@ -41,7 +41,7 @@ const CONFIG_BASE = {
   jwtSecret: 'RelojChecadorClaveSúperSecreta_2025!',
 };
 
-const firestore = new Firestore();
+const firestore = new Firestore({ databaseId: 'reloj-checador-db' });
 
 /* -------------------------------------------------
    HELPERS
