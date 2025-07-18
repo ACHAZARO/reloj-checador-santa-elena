@@ -1,48 +1,171 @@
-k// server.js - VERSIÓN 3.8 (FINAL CON CORRECCIÓN DE CORS Y COBERTURA COMPLETA)
+// server.js – v2.1 (Firestore + CORS arreglado)
 
-const express = require('express');
-const jwt = require('jsonwebtoken');
-const { google } = require('googleapis');
-const moment = require('moment-timezone');
-const cors = require('cors'); // 1. IMPORTAMOS LA LIBRERÍA
+/* -------------------------------------------------
+   IMPORTS
+--------------------------------------------------*/
+const express      = require('express');
+const cors         = require('cors');
+const jwt          = require('jsonwebtoken');
+const { Firestore } = require('@google-cloud/firestore');
+const moment       = require('moment-timezone');
 
+/* -------------------------------------------------
+   APP & CORS
+   – origin: '*' permite cualquier dominio (útil en pruebas).
+     Si quieres restringir, pon la URL exacta de tu Netlify.
+--------------------------------------------------*/
 const app = express();
-app.use(cors()); // 2. HABILITAMOS CORS PARA TODAS LAS RUTAS
+app.use(cors({ origin: '*' }));   // cabeceras para GET / POST
+app.options('*', cors());         // responde a las pre-flight OPTIONS
+
 app.use(express.json());
 
-// ===================================================================================
-// CONFIGURACIÓN ESTÁTICA
-// ===================================================================================
+/* -------------------------------------------------
+   CONFIGURACIÓN
+--------------------------------------------------*/
 const CONFIG_BASE = {
-    sheetId: '19TXMj2HfZBd1WPtHIv_jlT1-O8sgiIgW6qAtkLmHc0M',
-    timezone: 'America/Mexico_City',
-    establecimiento: { lat: 19.533642, lng: -96.892007 },
-    jwtSecret: 'CAMBIAR_A_UN_SECRETO_COMPLEJO',
-    jwtExpiry: '24h'
+  timezone: 'America/Mexico_City',
+  establecimiento: { lat: 19.533642, lng: -96.892007 },
+  toleranciaMetros: 150,
+  // Clave fija para firmar JWT (cámbiala cuando quieras)
+  jwtSecret: 'RelojChecadorClaveSúperSecreta_2025!',
 };
 
-// ===================================================================================
-// HELPERS Y MIDDLEWARES (Completos, sin cambios)
-// ===================================================================================
-async function getSheetsClient() { const auth = new google.auth.GoogleAuth({ scopes: ['https://www.googleapis.com/auth/spreadsheets'] }); const client = await auth.getClient(); return google.sheets({ version: 'v4', auth: client }); }
-function calculateDistance(lat1, lon1, lat2, lon2) { const R = 6371e3; const toRad = d => d * Math.PI / 180; const φ1 = toRad(lat1), φ2 = toRad(lat2); const Δφ = toRad(lat2 - lat1), Δλ = toRad(lon2 - lon1); const a = Math.sin(Δφ / 2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2; return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); }
-async function loadSheetData(req, res, next) { try { const sheets = await getSheetsClient(); const [empRes, regRes, paramRes] = await Promise.all([ sheets.spreadsheets.values.get({ spreadsheetId: CONFIG_BASE.sheetId, range: 'Empleados!A:H' }), sheets.spreadsheets.values.get({ spreadsheetId: CONFIG_BASE.sheetId, range: 'Registros!A:K' }), sheets.spreadsheets.values.get({ spreadsheetId: CONFIG_BASE.sheetId, range: 'Parametros!A:B' }) ]); const paramRows = paramRes.data.values || []; req.sheetData = { empleados: empRes.data.values || [], registros: regRes.data.values || [], parametros: Object.fromEntries(paramRows.slice(1)) }; next(); } catch (err) { console.error('Error cargando Sheets:', err); res.status(500).json({ success: false, error: 'Error al cargar datos de Sheets' }); } }
-function locationCheck(req, res, next) { const { lat, lon } = req.body; if (lat == null || lon == null) return res.status(400).json({ success: false, error: 'Necesitamos tu ubicación.' }); const dist = calculateDistance(lat, lon, CONFIG_BASE.establecimiento.lat, CONFIG_BASE.establecimiento.lng); if (dist > CONFIG_BASE.toleranciaMetros) return res.status(403).json({ success: false, error: `Estás a ${Math.round(dist)} m.` }); next(); }
-function verifyPin(req, res, next) { const { pin } = req.body; const [header, ...rows] = req.sheetData.empleados; const idx = header.indexOf('pin'); if (idx < 0) return res.status(500).json({ success: false, error: 'Columna "pin" no encontrada en Empleados' }); const row = rows.find(r => r[idx] === pin); if (!row) return res.status(404).json({ success: false, error: 'PIN no existe' }); req.empleado = Object.fromEntries(header.map((h, i) => [h, row[i]])); next(); }
-async function autoCloseOldShifts(req, res, next) { const hoy = moment().tz(CONFIG_BASE.timezone).format('YYYY-MM-DD'); const regs = req.sheetData.registros; const id_emp = req.empleado.id_empleado; const opened = regs.filter(r => r[1] === id_emp && !r[5] && r[3] !== hoy); if (opened.length > 1) return res.status(500).json({ success: false, error: 'Múltiples turnos antiguos sin cerrar' }); if (opened.length === 1) { const turno = opened[0]; const rowIndex = regs.findIndex(r => r[0] === turno[0]) + 1; const horaCierre = req.empleado.horario_salida || '18:00'; const fecha = turno[3]; const salida = `${fecha} ${horaCierre}`; const diff = moment.tz(salida, 'YYYY-MM-DD HH:mm', CONFIG_BASE.timezone).diff(moment.tz(turno[4], CONFIG_BASE.timezone), 'hours', true); const sheets = await getSheetsClient(); await sheets.spreadsheets.values.update({ spreadsheetId: CONFIG_BASE.sheetId, range: `Registros!F${rowIndex}:H${rowIndex}`, valueInputOption: 'USER_ENTERED', resource: { values: [[moment(salida).format('YYYY-MM-DD HH:mm:ss'), diff.toFixed(2), 'cierre_automatico']] } }); return res.status(409).json({ success: false, message: `Turno ${fecha} auto-cerrado` }); } next(); }
-function verifyManagerPassword(req, res, next) { const { contrasena_gerente } = req.body; const contrasenaCorrecta = req.sheetData.parametros.contrasena_gerente; if (!contrasena_gerente) return res.status(401).json({ success: false, error: 'Se requiere contraseña de gerente.' }); if (contrasena_gerente !== contrasenaCorrecta) return res.status(403).json({ success: false, error: 'Contraseña de gerente incorrecta.' }); next(); }
-async function handleCheckIn(req, res) { const ahora = moment().tz(CONFIG_BASE.timezone); const hoy = ahora.format('YYYY-MM-DD'); const sheets = await getSheetsClient(); const id_ses = `ses_${Date.now()}`; const token = jwt.sign({ id_sesion: id_ses, id_empleado: req.empleado.id_empleado }, CONFIG_BASE.jwtSecret, { expiresIn: CONFIG_BASE.jwtExpiry }); const diasMap = { 'D':0,'L':1,'M':2,'X':3,'J':4,'V':5,'S':6 }; const diasPermitidos = (req.empleado.dias_laborables||'').split(',').map(d => diasMap[d.trim().toUpperCase()]); const esDiaLaborable = diasPermitidos.includes(ahora.day()); const horaEntProg = moment.tz(`${hoy} ${req.empleado.horario_entrada}`, 'YYYY-MM-DD HH:mm', CONFIG_BASE.timezone); const horaSalProg = moment.tz(`${hoy} ${req.empleado.horario_salida}`, 'YYYY-MM-DD HH:mm', CONFIG_BASE.timezone); const esHoraLab = ahora.isBetween(horaEntProg, horaSalProg); const esNormal = esDiaLaborable && esHoraLab; await sheets.spreadsheets.values.append({ spreadsheetId: CONFIG_BASE.sheetId, range: 'Registros!A:K', valueInputOption: 'USER_ENTERED', resource: { values: [[ id_ses, req.empleado.id_empleado, req.empleado.nombre, hoy, ahora.format('YYYY-MM-DD HH:mm:ss'), '', '', esNormal ? 'normal' : 'cobertura_especial', '', 'pendiente', token ]] } }); res.status(201).json({ success: true, message: 'Entrada OK', id_sesion: id_ses, token, esNormal }); }
-async function handleCheckOut(req, res) { const ahora = moment().tz(CONFIG_BASE.timezone); const sheets = await getSheetsClient(); const openToday = req.sheetData.registros.filter(r => r[1] === req.empleado.id_empleado && !r[5] && r[3] === ahora.format('YYYY-MM-DD') ); const turno = openToday[0]; const tokenCli = req.body.token; if (!tokenCli || tokenCli !== turno[10]) { return res.status(403).json({ success: false, error: 'Token inválido' }); } try { jwt.verify(tokenCli, CONFIG_BASE.jwtSecret); } catch { return res.status(403).json({ success: false, error: 'Token expirado' }); } const rowIndex = req.sheetData.registros.findIndex(r=>r[0]===turno[0]) + 1; const inicio = moment.tz(turno[4], CONFIG_BASE.timezone); const horas = ahora.diff(inicio,'hours',true); await sheets.spreadsheets.values.update({ spreadsheetId: CONFIG_BASE.sheetId, range: `Registros!F${rowIndex}:G${rowIndex}`, valueInputOption: 'USER_ENTERED', resource: { values: [[ahora.format('YYYY-MM-DD HH:mm:ss'), horas.toFixed(2)]] } }); res.status(200).json({ success: true, message: 'Salida OK' }); }
+const firestore = new Firestore();
 
-// ===================================================================================
-// RUTAS PRINCIPALES
-// ===================================================================================
-app.post('/api/checada', [loadSheetData, locationCheck, verifyPin, autoCloseOldShifts], (req,res)=>( req.sheetData.registros.filter(r=>r[1]===req.empleado.id_empleado && !r[5] && r[3]===moment().tz(CONFIG_BASE.timezone).format('YYYY-MM-DD')).length===0 ? handleCheckIn(req,res) : handleCheckOut(req,res) ));
-app.post('/api/generar-reporte-semanal',[loadSheetData,verifyManagerPassword],async(req,res)=>{ try{ const{fecha_inicio,fecha_fin} = req.body; if(!fecha_inicio||!fecha_fin) return res.status(400).json({success:false,error:'Fechas requeridas'}); const{empleados,registros,parametros}=req.sheetData; const[hdr,...rows]=empleados; const report=[]; const lateMin=parseInt(parametros.retardo_minutos||'15',10); const covRate=parseFloat(parametros.pago_por_hora_cobertura||'0'); for(const r of rows){ const emp=Object.fromEntries(hdr.map((h,i)=>[h,r[i]])); const wd=(emp.dias_laborables||'').split(',').map(d=>({'D':0,'L':1,'M':2,'X':3,'J':4,'V':5,'S':6}[d.trim().toUpperCase()])); let faltas=0,ret=0,hN=0,hC=0; for(let d=moment(fecha_inicio);d.isSameOrBefore(moment(fecha_fin));d.add(1,'days')){ const str=d.format('YYYY-MM-DD'); const day=d.day(); const deber=wd.includes(day); const recs= registros.filter(x=>x[1]===emp.id_empleado&&x[3]===str); if(deber&&recs.length===0){faltas++;continue;} if(recs.length&&recs[0][5]){ const sub=recs[0]; let ent=moment.tz(sub[4],CONFIG_BASE.timezone); const sal=moment.tz(sub[5],CONFIG_BASE.timezone); const prog=moment.tz(`${str} ${emp.horario_entrada}`,'YYYY-MM-DD HH:mm',CONFIG_BASE.timezone); let start=ent; if(ent.diff(prog,'minutes')>lateMin){ret++; start=ent.clone().startOf('hour').add(1,'hour');} let hrs=sal.diff(start,'hours',true); if(hrs<0)hrs=0; sub[7]==='cobertura_especial'?hC+=hrs:hN+=hrs; } } const payN=hN*parseFloat(emp.sueldo_por_hora); const payC=hC*covRate; report.push({nombre:emp.nombre,faltas,retardos:ret,horasNormales:parseFloat(hN.toFixed(2)),horasCobertura:parseFloat(hC.toFixed(2)),pagoTotal:parseFloat((payN+payC).toFixed(2))}); } res.json({success:true,data:report}); }catch(e){ console.error('Reporte err:',e); res.status(500).json({success:false,error:'Error al generar reporte'});} });
-app.get('/api/empleados-para-cubrir',[loadSheetData],async(req,res)=>{ try{ const now=moment().tz(CONFIG_BASE.timezone); const today=now.day(); const[hdr,...rows]=req.sheetData.empleados; const recs=req.sheetData.registros; const dm={'D':0,'L':1,'M':2,'X':3,'J':4,'V':5,'S':6}; const data=rows.filter(r=>{ const emp=Object.fromEntries(hdr.map((h,i)=>[h,r[i]])); const wd=(emp.dias_laborables||'').split(',').map(d=>dm[d.trim().toUpperCase()]); if(!wd.includes(today))return false; return !recs.some(x=>x[1]===emp.id_empleado&&!x[5]); }).map(r=>({id_empleado:r[hdr.indexOf('id_empleado')],nombre:r[hdr.indexOf('nombre')]})); res.json({success:true,data}); }catch(e){ console.error('Cov err:',e); res.status(500).json({success:false,error:'Error listar ausentes'});} });
+/* -------------------------------------------------
+   HELPERS
+--------------------------------------------------*/
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371e3;
+  const toRad = d => (d * Math.PI) / 180;
+  const φ1 = toRad(lat1), φ2 = toRad(lat2);
+  const Δφ = toRad(lat2 - lat1), Δλ = toRad(lon2 - lon1);
+  const a = Math.sin(Δφ / 2) ** 2 +
+            Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 
-// ===================================================================================
-// INICIAR SERVIDOR
-// ===================================================================================
-app.listen(process.env.PORT||8080,()=>console.log('Servidor 3.8 corriendo'));
-// Re-desplegando con permisos corregidos
+/* -------------------------------------------------
+   MIDDLEWARES
+--------------------------------------------------*/
+async function loadData(req, _res, next) {
+  try {
+    const empleadosSnap = await firestore.collection('empleados').get();
+    req.firestoreData = {
+      empleados: empleadosSnap.docs.map(d => ({ id: d.id, ...d.data() })),
+    };
+    next();
+  } catch (err) {
+    console.error('Error cargando empleados:', err);
+    next(err);
+  }
+}
+
+function locationCheck(req, res, next) {
+  const { lat, lon } = req.body;
+  if (lat == null || lon == null) {
+    return res.status(400).json({ success: false, error: 'Ubicación requerida.' });
+  }
+  const dist = calculateDistance(
+    lat, lon,
+    CONFIG_BASE.establecimiento.lat,
+    CONFIG_BASE.establecimiento.lng,
+  );
+  if (dist > CONFIG_BASE.toleranciaMetros) {
+    return res.status(403).json({
+      success: false,
+      error: `Estás a ${Math.round(dist)} m – fuera de rango.`,
+    });
+  }
+  next();
+}
+
+function verifyPin(req, res, next) {
+  const { pin } = req.body;
+  const { empleados } = req.firestoreData;
+  if (!empleados?.length) {
+    return res.status(500).json({ success: false, error: 'Sin empleados en BD.' });
+  }
+  const emp = empleados.find(e => String(e.pin) === String(pin));
+  if (!emp) return res.status(404).json({ success: false, error: 'PIN no existe.' });
+  req.empleado = emp;
+  next();
+}
+
+/* -------------------------------------------------
+   RUTA PRINCIPAL /api/checada
+--------------------------------------------------*/
+app.post('/api/checada', [loadData, locationCheck, verifyPin], async (req, res) => {
+  try {
+    const { empleado } = req;
+    const ahora   = moment().tz(CONFIG_BASE.timezone);
+    const hoyStr  = ahora.format('YYYY-MM-DD');
+
+    const registrosRef = firestore.collection('registros');
+    const snap = await registrosRef
+      .where('id_empleado', '==', empleado.id)
+      .where('fecha',       '==', hoyStr)
+      .where('hora_salida', '==', null)
+      .limit(1)
+      .get();
+
+    const esEntrada = snap.empty;
+
+    if (esEntrada) {
+      /* -------- ENTRADA -------- */
+      const id_ses = `ses_${Date.now()}`;
+      const token  = jwt.sign(
+        { id_sesion: id_ses, id_empleado: empleado.id },
+        CONFIG_BASE.jwtSecret,
+        { expiresIn: '24h' },
+      );
+
+      const nuevo = {
+        id_empleado: empleado.id,
+        nombre     : empleado.nombre,
+        pin        : empleado.pin,
+        fecha      : hoyStr,
+        hora_entrada : ahora.toDate(),
+        hora_salida  : null,
+        token_sesion : token,
+      };
+
+      const doc = await registrosRef.add(nuevo);
+      return res.status(201).json({
+        success : true,
+        message : 'Entrada registrada.',
+        id_sesion: doc.id,
+        token,
+      });
+    }
+
+    /* -------- SALIDA -------- */
+    const turnoDoc = snap.docs[0];
+    const tokenCli = req.body.token;
+    if (tokenCli !== turnoDoc.data().token_sesion) {
+      return res.status(403).json({ success:false, error:'Token inválido.' });
+    }
+
+    const horaEnt  = moment(turnoDoc.data().hora_entrada.toDate());
+    const horas    = ahora.diff(horaEnt, 'hours', true);
+
+    await turnoDoc.ref.update({
+      hora_salida     : ahora.toDate(),
+      horas_trabajadas: +horas.toFixed(2),
+    });
+
+    return res.status(200).json({ success:true, message:'Salida registrada.' });
+  } catch (err) {
+    console.error('Error en /api/checada:', err);
+    return res.status(500).json({ success:false, error:'Error procesando la checada.' });
+  }
+});
+
+/* -------------------------------------------------
+   ARRANQUE
+--------------------------------------------------*/
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => {
+  console.log(`Servidor v2.1 corriendo en puerto ${PORT}`);
+});
