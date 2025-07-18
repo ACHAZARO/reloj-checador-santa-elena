@@ -6,14 +6,28 @@
     "start": "node server.js"
   },
   "dependencies": {
-    "express": "^4.19.2",
+    "@google-cloud/firestore": "^7.11.3",
     "body-parser": "^1.20.0",
     "cors": "^2.8.5",
-    "moment-timezone": "^0.5.45",
+    "express": "^4.19.2",
     "googleapis": "^137.1.0",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "moment-timezone": "^0.5.45"
   },
   "engines": {
     "node": "20.x"
-  }
+  },
+  "description": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ACHAZARO/reloj-checador-santa-elena.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/ACHAZARO/reloj-checador-santa-elena/issues"
+  },
+  "homepage": "https://github.com/ACHAZARO/reloj-checador-santa-elena#readme"
 }
