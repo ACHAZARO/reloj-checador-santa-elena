@@ -11,13 +11,24 @@ const moment       = require('moment-timezone');
 
 /* -------------------------------------------------
    APP & CORS
-   – origin: '*' permite cualquier dominio (útil en pruebas).
-     Si quieres restringir, pon la URL exacta de tu Netlify.
 --------------------------------------------------*/
 const app = express();
-app.use(cors({ origin: '*' }));   // cabeceras para GET / POST
-app.options('*', cors());         // responde a las pre-flight OPTIONS
 
+/* ---------- RESPUESTA MANUAL A OPTIONS ---------- */
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    res.set({
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET,HEAD,PUT,PATCH,POST,DELETE',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    });
+    return res.status(204).send('');
+  }
+  next();
+});
+/* ------------------------------------------------- */
+
+app.use(cors({ origin: '*' }));   // En producción puedes poner tu URL de Netlify
 app.use(express.json());
 
 /* -------------------------------------------------
@@ -27,7 +38,6 @@ const CONFIG_BASE = {
   timezone: 'America/Mexico_City',
   establecimiento: { lat: 19.533642, lng: -96.892007 },
   toleranciaMetros: 150,
-  // Clave fija para firmar JWT (cámbiala cuando quieras)
   jwtSecret: 'RelojChecadorClaveSúperSecreta_2025!',
 };
 
