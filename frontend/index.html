@@ -1,0 +1,229 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Reloj Checador: Santa Elena</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { -webkit-tap-highlight-color: transparent; }
+        .view { display: none; }
+        .active-view { display: block; }
+        #keypad button { transition: background-color 0.1s ease-in-out; }
+        #keypad button:active { background-color: #d1d5db; }
+        .spinner { border-top-color: #3b82f6; }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen font-sans">
+
+    <div id="main-container" class="w-full max-w-xs mx-auto">
+        <div id="pin-view" class="view active-view bg-white p-6 rounded-xl shadow-2xl text-center">
+            <h2 class="text-2xl font-bold mb-2 text-gray-800">Reloj Checador: Santa Elena</h2>
+            <p id="clock" class="text-4xl font-mono text-gray-700 mb-4"></p>
+            <input type="password" id="pin-input" readonly class="w-full p-3 mb-4 bg-gray-100 border-2 border-gray-300 rounded-lg text-center text-4xl tracking-widest" maxlength="4" placeholder="PIN">
+            <div id="keypad" class="grid grid-cols-3 gap-2 mb-4">
+                <button data-key="clear" class="py-4 text-xl font-bold text-yellow-600 bg-gray-200 rounded-lg">C</button>
+                <button data-key="0" class="py-4 text-2xl font-bold bg-gray-200 rounded-lg">0</button>
+                <button data-key="del" class="py-4 text-xl font-bold text-red-600 bg-gray-200 rounded-lg">⌫</button>
+            </div>
+            <button id="submit-button" onclick="iniciarProcesoDeChecada()" class="w-full bg-blue-600 text-white p-4 rounded-lg text-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400">Aceptar</button>
+            <div class="h-12 mt-4 flex items-center justify-center">
+                <p id="status-message" class="text-md font-medium text-gray-700 break-words"></p>
+                <div id="spinner" class="spinner animate-spin rounded-full h-8 w-8 border-4 border-gray-200" style="display: none;"></div>
+            </div>
+        </div>
+
+        <div id="cobertura-pregunta-view" class="view bg-white p-8 rounded-xl shadow-2xl text-center">
+            <h3 class="text-xl font-bold mb-4">Entrada Fuera de Horario</h3>
+            <p class="text-gray-600 mb-6">Tu checada se registró como "Cobertura Especial". ¿Estás cubriendo el turno de un compañero?</p>
+            <button onclick="iniciarFlujoDeAsignacion()" class="w-full bg-green-600 text-white p-3 rounded-lg mb-2">Sí, cubrir a un compañero</button>
+            <button onclick="finalizarAccionConExito()" class="w-full bg-gray-500 text-white p-3 rounded-lg">No, solo es entrada especial</button>
+        </div>
+
+        <div id="seleccionar-companero-view" class="view bg-white p-8 rounded-xl shadow-2xl text-center">
+            <h3 class="text-xl font-bold mb-4">¿A quién vas a cubrir?</h3>
+            <div id="lista-companeros-container">
+                <select id="companero-select" class="w-full p-3 mb-6 border rounded-lg bg-gray-50"></select>
+                <button onclick="asignarCobertura()" class="w-full bg-green-600 text-white p-3 rounded-lg">Confirmar Cobertura</button>
+            </div>
+            <button onclick="cancelarAccion()" class="w-full mt-2 bg-gray-500 text-white p-2 rounded-lg text-sm">Cancelar</button>
+        </div>
+    </div>
+    
+    <script>
+        const API_URL = 'https://reloj-checador-se.uc.r.appspot.com'; 
+        let estadoGlobal = {};
+
+        const pinInput = document.getElementById('pin-input');
+        const statusMessage = document.getElementById('status-message');
+        const submitButton = document.getElementById('submit-button');
+        const spinner = document.getElementById('spinner');
+        const clockElement = document.getElementById('clock');
+        
+        function cambiarVista(vistaId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active-view'));
+            document.getElementById(vistaId).classList.add('active-view');
+        }
+
+        function mostrarMensaje(texto, color = 'gray', isLoading = false) {
+            statusMessage.textContent = texto;
+            const colores = { red: 'text-red-600', green: 'text-green-600', blue: 'text-blue-600', yellow: 'text-yellow-600', gray: 'text-gray-700' };
+            statusMessage.className = `text-md font-medium ${colores[color] || 'text-gray-700'}`;
+            spinner.style.display = isLoading ? 'block' : 'none';
+            statusMessage.style.display = isLoading ? 'none' : 'block';
+            submitButton.disabled = isLoading;
+        }
+
+        function cancelarAccion() {
+            estadoGlobal = {};
+            cambiarVista('pin-view');
+            mostrarMensaje('', 'gray');
+            pinInput.value = '';
+        }
+
+        function finalizarAccionConExito(mensaje = '✅ ¡Entrada Registrada!') {
+            mostrarMensaje(mensaje, 'green');
+            setTimeout(cancelarAccion, 2500);
+        }
+
+        function setupKeypad() {
+            const keypad = document.getElementById('keypad');
+            ['1','2','3','4','5','6','7','8','9'].reverse().forEach(key => {
+                const button = document.createElement('button');
+                button.textContent = key;
+                button.dataset.key = key;
+                button.className = 'py-4 text-2xl font-bold bg-gray-200 rounded-lg';
+                keypad.insertBefore(button, keypad.firstChild);
+            });
+            keypad.addEventListener('click', e => {
+                const key = e.target.dataset.key;
+                if (!key) return;
+                if (key === 'del') pinInput.value = pinInput.value.slice(0, -1);
+                else if (key === 'clear') pinInput.value = '';
+                else if (pinInput.value.length < 4) pinInput.value += key;
+            });
+        }
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            clockElement.textContent = `${hours}:${minutes}:${seconds}`;
+        }
+
+        async function iniciarProcesoDeChecada() {
+            if (pinInput.value.length !== 4) return mostrarMensaje('El PIN debe ser de 4 dígitos.', 'red');
+            mostrarMensaje('Obteniendo ubicación GPS...', 'yellow', true);
+            try {
+                const position = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+                });
+                const token = localStorage.getItem('reloj_checador_token');
+                let body = { pin: pinInput.value, lat: position.coords.latitude, lon: position.coords.longitude };
+                if (token) body.token = token;
+                llamarApiChecada(body);
+            } catch (error) {
+                mostrarMensaje(`Error de GPS: ${error.message}`, 'red');
+            }
+        }
+        
+        async function llamarApiChecada(body) {
+            mostrarMensaje('Verificando con el servidor...', 'yellow', true);
+            try {
+                const response = await fetch(`${API_URL}/api/checada`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const result = await response.json();
+                if (!result.success) {
+                    throw new Error(result.error || result.message);
+                }
+                if (result.message.includes('Entrada')) {
+                    localStorage.setItem('reloj_checador_token', result.token);
+                    estadoGlobal.id_sesion_actual = result.id_sesion;
+                    if (result.esNormal) {
+                        finalizarAccionConExito('✅ ¡Entrada Exitosa!');
+                    } else {
+                        mostrarMensaje('');
+                        cambiarVista('cobertura-pregunta-view');
+                    }
+                } else if (result.message.includes('Salida')) {
+                    localStorage.removeItem('reloj_checador_token');
+                    finalizarAccionConExito('👋 ¡Salida Exitosa!');
+                }
+            } catch (error) {
+                mostrarMensaje(`Error: ${error.message}`, 'red');
+                pinInput.value = '';
+            } finally {
+                if (!document.getElementById('cobertura-pregunta-view').classList.contains('active-view') && !document.getElementById('seleccionar-companero-view').classList.contains('active-view')) {
+                    submitButton.disabled = false;
+                    spinner.style.display = 'none';
+                    statusMessage.style.display = 'block';
+                }
+            }
+        }
+        
+        async function iniciarFlujoDeAsignacion() {
+            mostrarMensaje('Buscando compañeros...', 'yellow', true);
+            cambiarVista('seleccionar-companero-view');
+            try {
+                const response = await fetch(`${API_URL}/api/empleados-para-cubrir`);
+                const result = await response.json();
+                if (!result.success) throw new Error(result.error);
+                const container = document.getElementById('lista-companeros-container');
+                if(result.data.length === 0) {
+                     container.innerHTML = '<p class="text-gray-600 mb-4">No hay compañeros ausentes que necesiten cobertura en este momento.</p>';
+                } else {
+                    container.innerHTML = `
+                        <select id="companero-select" class="w-full p-3 mb-6 border rounded-lg bg-gray-50">
+                            <option value="">Selecciona a quién cubres...</option>
+                        </select>
+                        <button onclick="asignarCobertura()" class="w-full bg-green-600 text-white p-3 rounded-lg">Confirmar Cobertura</button>
+                    `;
+                    const newSelect = document.getElementById('companero-select');
+                    result.data.forEach(c => {
+                        const option = document.createElement('option');
+                        option.value = c.id_empleado;
+                        option.textContent = c.nombre;
+                        newSelect.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                mostrarMensaje(`Error: ${error.message}`, 'red');
+                setTimeout(cancelarAccion, 2500);
+            }
+        }
+
+        async function asignarCobertura() {
+             const companeroId = document.getElementById('companero-select').value;
+             if (!companeroId) {
+                alert('Debes seleccionar un compañero.');
+                return;
+             }
+             mostrarMensaje('Asignando cobertura...', 'yellow', true);
+             try {
+                const response = await fetch(`${API_URL}/api/asignar-cobertura`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id_sesion_cobertura: estadoGlobal.id_sesion_actual,
+                        id_empleado_cubierto: companeroId
+                    }),
+                });
+                const result = await response.json();
+                if (!result.success) throw new Error(result.error);
+                finalizarAccionConExito('✅ Cobertura registrada.');
+             } catch (error) {
+                 mostrarMensaje(`Error: ${error.message}`, 'red');
+                 setTimeout(cancelarAccion, 2500);
+             }
+        }
+
+        setupKeypad();
+        setInterval(updateClock, 1000);
+        updateClock();
+    </script>
+</body>
+</html>

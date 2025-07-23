@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<title>Panel Gerente – Reloj Checador</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-4">
+  <h1 class="text-2xl font-bold mb-4">Registros del Día</h1>
+
+  <div class="mb-4">
+    Fecha:
+    <input id="fecha" type="date" class="border p-1" />
+    <button id="btnCargar" class="bg-blue-600 text-white px-3 py-1 rounded">Cargar</button>
+    <button id="btnCSV" class="bg-green-600 text-white px-3 py-1 rounded ml-2">Descargar CSV</button>
+  </div>
+
+  <table id="tbl" class="min-w-full bg-white border">
+    <thead>
+      <tr class="bg-gray-200">
+        <th class="border px-2 py-1">Empleado</th>
+        <th class="border px-2 py-1">Entrada</th>
+        <th class="border px-2 py-1">Salida</th>
+        <th class="border px-2 py-1">Horas</th>
+        <th class="border px-2 py-1">Incidencia</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+<script>
+const API = 'https://reloj-checador-se.uc.r.appspot.com';
+const KEY = 'CHEMEX17';   // clave del gerente
+
+document.getElementById('btnCargar').onclick = cargar;
+document.getElementById('btnCSV').onclick   = descargarCSV;
+
+// carga registros
+function cargar() {
+  const f = document.getElementById('fecha').value;
+  fetch(`${API}/api/registros?fecha=${f}`, {
+    headers: { 'X-Gerente-Key': KEY }
+  })
+  .then(r => r.json())
+  .then(({data}) => pintar(data));
+}
+
+// pinta la tabla
+function pintar(arr) {
+  const tbody = document.querySelector('#tbl tbody');
+  tbody.innerHTML = '';
+  arr.forEach(r => {
+    tbody.insertAdjacentHTML('beforeend', `
+      <tr>
+        <td class="border px-2">${r.nombre}</td>
+        <td class="border px-2">${fmt(r.hora_entrada)}</td>
+        <td class="border px-2">${fmt(r.hora_salida)}</td>
+        <td class="border px-2">${r.horas_trabajadas||''}</td>
+        <td class="border px-2">${r.incidencia||''}</td>
+      </tr>`);
+  });
+}
+
+// formatea timestamp Firestore
+function fmt(ts){
+  if(!ts) return '';
+  const d = new Date(ts._seconds*1000);
+  return d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+}
+
+// exporta CSV
+function descargarCSV(){
+  const rows=[['Empleado','Entrada','Salida','Horas','Incidencia']];
+  document.querySelectorAll('#tbl tbody tr').forEach(tr=>{
+    const cols=[...tr.children].map(td=>td.textContent);
+    rows.push(cols);
+  });
+  const csv = rows.map(r=>r.join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = Object.assign(document.createElement('a'),{
+    href: URL.createObjectURL(blob),
+    download: 'registros.csv'
+  });
+  a.click();
+}
+</script>
+</body>
+</html>
