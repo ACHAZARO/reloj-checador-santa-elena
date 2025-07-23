@@ -39,6 +39,8 @@ const CONFIG_BASE = {
   establecimiento: { lat: 19.533642, lng: -96.892007 },
   toleranciaMetros: 150,
   jwtSecret: 'RelojChecadorClaveSúperSecreta_2025!',
+gerenteKey: 'CHEMEX17',
+
 };
 
 const firestore = new Firestore({ databaseId: 'reloj-checador-db' });
