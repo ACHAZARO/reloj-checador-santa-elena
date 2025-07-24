@@ -30,7 +30,9 @@
 
 <script>
 const API = 'https://reloj-checador-se.uc.r.appspot.com';
-const KEY = 'CHEMEX17';   // clave del gerente
+const KEY = localStorage.getItem('gerenteKey') ||
+            prompt('Clave de gerente');          // pide la clave una vez
+localStorage.setItem('gerenteKey', KEY);         // la guarda para la próxima
 
 document.getElementById('btnCargar').onclick = cargar;
 document.getElementById('btnCSV').onclick   = descargarCSV;
