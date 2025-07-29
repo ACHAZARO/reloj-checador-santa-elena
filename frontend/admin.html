@@ -57,54 +57,49 @@
 <script>
 const API = 'https://reloj-checador-se.uc.r.appspot.com';
 
-// —— obtén la clave desde Firestore ——
-let GERENTE_KEY = null;
-fetch(`${API}/api/parametro?doc=contrasena_gerente`)
-  .then(r => r.json())
+/*──────────────────────────────────────────
+  MODAL – pide la clave al gerente
+──────────────────────────────────────────*/
+const dlg = document.getElementById('dlg');
+const inp = document.getElementById('clave');
+const btn = document.getElementById('entrar');
+const chk = document.getElementById('chkMostrar');
+
+// 1. Trae la clave guardada en Firestore
+let claveReal = '';
+fetch(`${API}/api/parametros/contrasena_gerente`)
+  .then(r => r.ok ? r.json() : Promise.reject(r))
   .then(({ valor }) => {
-    GERENTE_KEY = (valor || '').trim();
-    // habilita el botón
-    msgLoad.classList.add('hidden');
-    btnLogin.disabled = false;
-    btnLogin.classList.remove('opacity-50','cursor-not-allowed');
-  });
+     claveReal = (valor || '').trim();
+     document.getElementById('lblCargando').textContent = '';
+     btn.classList.remove('opacity-50', 'cursor-not-allowed');
+  })
+  .catch(() => alert('No pude obtener la clave de gerente :('));
 
-/* ========  VARIABLES DEL MODAL  ======== */
-const modal    = document.getElementById('modal');
-const btnLogin = document.getElementById('btnLogin');
-const msgErr   = document.getElementById('msgErr');
-const msgLoad  = document.getElementById('msgLoad');
-const chkShow  = document.getElementById('chkShow');
-const inpPwd   = document.getElementById('inpPwd');
+chk.onchange = () => inp.type = chk.checked ? 'text' : 'password';
 
-/* mostrar/ocultar contraseña */
-chkShow.onchange = () =>  inpPwd.type = chkShow.checked ? 'text' : 'password';
-
-/* clic en Entrar */
-btnLogin.onclick = () => {
-  const pwd = inpPwd.value.trim();
-  if (pwd === GERENTE_KEY) {
-    sessionStorage.setItem('gerenteOK','1');
-    modal.classList.add('hidden');
+btn.onclick = () => {
+  if (inp.value.trim() === claveReal) {
+     localStorage.setItem('gerenteKey', claveReal);
+     dlg.close();
   } else {
-    msgErr.classList.remove('hidden');
+     alert('Clave incorrecta');
   }
 };
 
-/* sesión ya válida */
-if (sessionStorage.getItem('gerenteOK') === '1') modal.classList.add('hidden');
-
-/* ========  BOTONES DE LA PÁGINA  ======== */
+/*──────────────────────────────────────────
+  Botones de Cargar registros y CSV
+──────────────────────────────────────────*/
 document.getElementById('btnCargar').onclick = cargar;
 document.getElementById('btnCSV').onclick   = descargarCSV;
 
 function cargar() {
-  const f = document.getElementById('fecha').value;
-  fetch(`${API}/api/registros?fecha=${f}`, {
-    headers: { 'X-Gerente-Key': GERENTE_KEY }
+  const fecha = document.getElementById('fecha').value;
+  fetch(`${API}/api/registros?fecha=${fecha}`, {
+        headers: { 'X-Gerente-Key': localStorage.getItem('gerenteKey') }
   })
   .then(r => r.json())
-  .then(({data}) => pintar(data));
+  .then(({ data }) => pintar(data));
 }
 
 function pintar(arr) {
@@ -116,8 +111,8 @@ function pintar(arr) {
         <td class="border px-2">${r.nombre}</td>
         <td class="border px-2">${fmt(r.hora_entrada)}</td>
         <td class="border px-2">${fmt(r.hora_salida)}</td>
-        <td class="border px-2">${r.horas_trabajadas||''}</td>
-        <td class="border px-2">${r.incidencia||''}</td>
+        <td class="border px-2">${r.horas_trabajadas ?? ''}</td>
+        <td class="border px-2">${r.incidencia       ?? ''}</td>
       </tr>`);
   });
 }
@@ -131,16 +126,12 @@ function fmt(ts){
 function descargarCSV(){
   const rows=[['Empleado','Entrada','Salida','Horas','Incidencia']];
   document.querySelectorAll('#tbl tbody tr').forEach(tr=>{
-    const cols=[...tr.children].map(td=>td.textContent);
-    rows.push(cols);
+     rows.push([...tr.children].map(td=>td.textContent));
   });
-  const csv = rows.map(r=>r.join(',')).join('\n');
-  const blob = new Blob([csv], {type:'text/csv'});
-  const a = Object.assign(document.createElement('a'),{
-    href: URL.createObjectURL(blob),
-    download: 'registros.csv'
-  });
-  a.click();
+  const blob=new Blob([rows.map(r=>r.join(',')).join('\n')],{type:'text/csv'});
+  Object.assign(document.createElement('a'),{
+    href:URL.createObjectURL(blob),download:'registros.csv'
+  }).click();
 }
 </script>
 </body>
