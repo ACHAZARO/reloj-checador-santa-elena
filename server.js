@@ -1,3 +1,125 @@
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
+cd ~/reloj-checador-backend
+nano server.js
 // server.js – v2.1 (Firestore + CORS arreglado)
 
 /* -------------------------------------------------
@@ -178,6 +300,22 @@ app.post('/api/checada', [loadData, locationCheck, verifyPin], async (req, res) 
    ARRANQUE
 --------------------------------------------------*/
 const PORT = process.env.PORT || 8080;
+// ───────────── /api/clave-gerente ─────────────
+app.get('/api/clave-gerente', async (req, res) => {
+  try {
+    const doc = await firestore
+      .collection('parametros')
+      .doc('contrasena_gerente')
+      .get();
+
+    if (!doc.exists) return res.status(404).json({ error: 'no_doc' });
+    res.json({ valor: doc.get('valor') });
+  } catch (e) {
+    console.error('error /api/clave-gerente', e);
+    res.status(500).json({ error: 'server' });
+  }
+});
+// ──────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`Servidor v2.1 corriendo en puerto ${PORT}`);
 });
