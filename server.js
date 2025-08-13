@@ -7,7 +7,9 @@ const express      = require('express');
 const cors         = require('cors');
 const jwt          = require('jsonwebtoken');
 const { Firestore } = require('@google-cloud/firestore');
-const moment       = require('moment-timezone');
+const    moment       = require('moment-timezone');
+
+const payrollRoutes = require('./payroll/routes');
 
 /* -------------------------------------------------
    APP & CORS
@@ -30,6 +32,8 @@ app.use((req, res, next) => {
 
 app.use(cors({ origin: '*' }));   // En producción puedes poner tu URL de Netlify
 app.use(express.json());
+app.use('/api/payroll', payrollRoutes);
+
 
 /* -------------------------------------------------
    CONFIGURACIÓN
@@ -198,3 +202,4 @@ app.listen(PORT, () => {
   console.log(`Servidor v2.1 corriendo en puerto ${PORT}`);
 });
 module.exports = app;
+
