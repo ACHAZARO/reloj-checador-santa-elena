@@ -62,13 +62,29 @@ async function computeForEmployee(employee, startAt, endAt) {
   const absencesUnj = 0;
   const absencesJ = 0;
   const covers = false;
-  const basePayType = employee.basePayType || 'hourly';
-  const basePay = employee.basePay ?? 60;
+ const basePayType = employee.basePayType || 'hourly';
+  let basePay = employee.basePay ?? 60;
   const otMultiplier = 1.5;
-  const regularPay = basePayType === 'hourly' ? hoursRegular * basePay : 0;
-  const overtimePay = basePayType === 'hourly' ? hoursOt * basePay * otMultiplier : 0;
+    // Convert daily pay to hourly if basePayType is 'daily'
+  if (basePayType === 'daily') {
+    let hoursPerDay = 8;
+    if (
+      employee.schedule &&
+      employee.schedule.shift &&
+      employee.schedule.shift.start &&
+      employee.schedule.shift.end
+    ) {
+      const [startHour, startMin] = employee.schedule.shift.start.split(':').map(Number);
+      const [endHour, endMin] = employee.schedule.shift.end.split(':').map(Number);
+      hoursPerDay = (endHour + endMin / 60) - (startHour + startMin / 60);
+      if (hoursPerDay <= 0) hoursPerDay = 8;
+    }
+    basePay = basePay / hoursPerDay;
+  }
+ const regularPay = (basePayType === 'hourly' || basePayType === 'daily') ? hoursRegular * basePay : 0;
+ const overtimePay = (basePayType === 'hourly' || basePayType === 'daily') ? hoursOt * basePay * otMultiplier : 0;
   const salaryPay = basePayType === 'salary' ? employee.basePay || 0 : 0;
-  const total = basePayType === 'hourly' ? regularPay + overtimePay : salaryPay;
+ const total = (basePayType === 'hourly' || basePayType === 'daily') ? regularPay + overtimePay : salaryPay;
   return {
     hours: { regular: hoursRegular, overtime: hoursOt },
     tardies,
