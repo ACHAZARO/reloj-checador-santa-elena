@@ -33,6 +33,28 @@
 
   <h1 class="text-2xl font-bold mb-4">Registros del Día</h1>
 
+  <!-- Formulario para alta de empleado -->
+  <form id="formNuevoEmpleado" class="p-4 bg-white rounded shadow mb-4">
+    <h3 class="text-lg font-bold mb-2">Agregar empleado</h3>
+    <div class="mb-2">
+      <label class="block font-medium">Nombre</label>
+      <input id="inpNombre" type="text" class="border w-full p-1">
+    </div>
+    <div class="mb-2">
+      <label class="block font-medium">PIN</label>
+      <input id="inpPin" type="text" class="border w-full p-1">
+    </div>
+    <div class="mb-2">
+      <label class="block font-medium">Sueldo diario</label>
+      <input id="inpSalario" type="number" step="0.01" class="border w-full p-1">
+    </div>
+    <div class="mb-2">
+      <label class="block font-medium">Fecha de ingreso</label>
+      <input id="inpFecha" type="date" class="border w-full p-1">
+    </div>
+    <button id="btnAgregarEmpleado" type="button" class="bg-blue-500 text-white px-4 py-2 rounded">Agregar</button>
+  </form>
+
   <div class="mb-4">
     Fecha:
     <input id="fecha" type="date" class="border p-1" />
@@ -57,12 +79,12 @@
     const API = 'https://reloj-checador-se.uc.r.appspot.com';
 
     // Elementos del modal
-    const modal   = document.getElementById('modal');
-    const inpPwd  = document.getElementById('inpPwd');
-    const btnLogin= document.getElementById('btnLogin');
-    const chkShow = document.getElementById('chkShow');
-    const msgErr  = document.getElementById('msgErr');
-    const msgLoad = document.getElementById('msgLoad');
+    const modal    = document.getElementById('modal');
+    const inpPwd   = document.getElementById('inpPwd');
+    const btnLogin = document.getElementById('btnLogin');
+    const chkShow  = document.getElementById('chkShow');
+    const msgErr   = document.getElementById('msgErr');
+    const msgLoad  = document.getElementById('msgLoad');
 
     // Muestra mensaje de error
     function showError(text) {
@@ -114,7 +136,6 @@
 
     initLogin();
 
-
     // ───── FUNCIONES DE REGISTROS ─────
     document.getElementById('btnCargar').onclick = cargar;
     document.getElementById('btnCSV').onclick   = descargarCSV;
@@ -160,6 +181,37 @@
         href: URL.createObjectURL(blob),
         download: 'registros.csv'
       }).click();
+    }
+
+    // ───── ALTA DE EMPLEADOS ─────
+    const btnAgregarEmpleado = document.getElementById('btnAgregarEmpleado');
+    if (btnAgregarEmpleado) {
+      btnAgregarEmpleado.addEventListener('click', async () => {
+        const nombre       = document.getElementById('inpNombre').value.trim();
+        const pin          = document.getElementById('inpPin').value.trim();
+        const salarioDiario= document.getElementById('inpSalario').value.trim();
+        const fechaIngreso = document.getElementById('inpFecha').value.trim();
+        if (!nombre || !pin || !salarioDiario) {
+          alert('Llena todos los campos obligatorios');
+          return;
+        }
+        try {
+          const res = await fetch(`${API}/api/empleados`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nombre, pin, salarioDiario, fechaIngreso })
+          });
+          if (res.ok) {
+            alert('Empleado creado correctamente');
+            document.getElementById('formNuevoEmpleado').reset();
+          } else {
+            const data = await res.json();
+            alert('Error: ' + (data.error || 'No se pudo crear'));
+          }
+        } catch (err) {
+          alert('Error al conectar con el servidor');
+        }
+      });
     }
   </script>
 </body>
