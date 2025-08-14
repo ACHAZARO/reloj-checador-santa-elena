@@ -172,7 +172,48 @@ app.post('/api/checada', [loadData, locationCheck, verifyPin], async (req, res) 
     });
 
     return res.status(200).json({ success:true, message:'Salida registrada.' });
+  } catc
+   // --- Employee management endpoints ---
+app.get('/api/empleados', async (req, res) => {
+  try {
+    const snap = await firestore.collection('empleados').where('deleted', '!=', true).get();
+    const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    res.json(list);
   } catch (err) {
+    console.error('Error listando empleados:', err);
+    res.status(500).json({ error: 'server' });
+  }
+});
+
+app.post('/api/empleados', async (req, res) => {
+  try {
+    const { nombre, pin, salarioDiario, fechaIngreso } = req.body;
+    if (!nombre || !pin || !salarioDiario) {
+      return res.status(400).json({ error: 'Datos incompletos' });
+    }
+    const pinSnap = await firestore.collection('empleados').where('pin','==', pin).get();
+    if (!pinSnap.empty) {
+      return res.status(409).json({ error: 'PIN ya existe' });
+    }
+    const nuevoEmpleado = {
+      nombre,
+      pin,
+      basePayType: 'daily',
+      basePay: parseFloat(salarioDiario),
+      status: 'active',
+      deleted: false,
+      fechaIngreso: fechaIngreso ? new Date(fechaIngreso) : new Date(),
+      createdAt: new Date()
+    };
+    const docRef = await firestore.collection('empleados').add(nuevoEmpleado);
+    res.status(201).json({ id: docRef.id, ...nuevoEmpleado });
+  } catch (err) {
+    console.error('Error creando empleado:', err);
+    res.status(500).json({ error: 'server' });
+  }
+});
+  
+   h (err) {
     console.error('Error en /api/checada:', err);
     return res.status(500).json({ success:false, error:'Error procesando la checada.' });
   }
@@ -202,4 +243,5 @@ app.listen(PORT, () => {
   console.log(`Servidor v2.1 corriendo en puerto ${PORT}`);
 });
 module.exports = app;
+
 
