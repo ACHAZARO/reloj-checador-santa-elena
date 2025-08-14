@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Resumen de Empleados – Reloj Checador</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-4">
+  <h1 class="text-2xl font-bold mb-4">Resumen de Empleados</h1>
+  <button id="btnCargar" class="bg-blue-600 text-white px-3 py-1 rounded mb-4">Cargar resumen</button>
+  <table class="min-w-full bg-white border">
+    <thead>
+      <tr class="bg-gray-200">
+        <th class="border px-2 py-1">Empleado</th>
+        <th class="border px-2 py-1">Fecha de ingreso</th>
+        <th class="border px-2 py-1">Total de horas</th>
+      </tr>
+    </thead>
+    <tbody id="tbody">
+    </tbody>
+  </table>
+  <script>
+    const API = 'https://reloj-checador-se.uc.r.appspot.com';
+    document.getElementById('btnCargar').addEventListener('click', async () => {
+      try {
+        const res = await fetch(`${API}/api/empleados/resumen`);
+        if (!res.ok) throw new Error('Error de servidor');
+        const data = await res.json();
+        const tbody = document.getElementById('tbody');
+        tbody.innerHTML = '';
+        data.forEach(emp => {
+          const tr = document.createElement('tr');
+          const horas = emp.totalHoras;
+          const horasFormatted = typeof horas === 'number' ? horas.toFixed(2) : horas;
+          tr.innerHTML = `
+            <td class="border px-2 py-1">${emp.nombre || ''}</td>
+            <td class="border px-2 py-1">${emp.fechaIngreso || ''}</td>
+            <td class="border px-2 py-1">${horasFormatted || ''}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        alert(err.message || 'Error cargando resumen');
+      }
+    });
+  </script>
+</body>
+</html>
