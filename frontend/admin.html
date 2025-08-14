@@ -7,7 +7,7 @@
 </head>
 <body class="bg-gray-100 p-4">
 
-  <!-- ───── MODAL LOGIN ───── -->
+  <!-- ――――― MODAL LOGIN ――――― -->
   <div id="modal" class="fixed inset-0 flex items-center justify-center bg-black/40">
     <div class="bg-white p-6 rounded shadow w-72">
       <h2 class="text-lg font-bold mb-4">Clave de gerente</h2>
@@ -60,6 +60,7 @@
     <input id="fecha" type="date" class="border p-1" />
     <button id="btnCargar" class="bg-blue-600 text-white px-3 py-1 rounded">Cargar</button>
     <button id="btnCSV"   class="bg-green-600 text-white px-3 py-1 rounded ml-2">Descargar CSV</button>
+    <button id="btnResumen" class="bg-purple-600 text-white px-3 py-1 rounded ml-2">Resumen</button>
   </div>
 
   <table id="tbl" class="min-w-full bg-white border">
@@ -136,7 +137,7 @@
 
     initLogin();
 
-    // ───── FUNCIONES DE REGISTROS ─────
+    // ――――― FUNCIONES DE REGISTROS ―――――
     document.getElementById('btnCargar').onclick = cargar;
     document.getElementById('btnCSV').onclick   = descargarCSV;
 
@@ -183,14 +184,14 @@
       }).click();
     }
 
-    // ───── ALTA DE EMPLEADOS ─────
+    // ――――― ALTA DE EMPLEADOS ―――――
     const btnAgregarEmpleado = document.getElementById('btnAgregarEmpleado');
     if (btnAgregarEmpleado) {
       btnAgregarEmpleado.addEventListener('click', async () => {
-        const nombre       = document.getElementById('inpNombre').value.trim();
-        const pin          = document.getElementById('inpPin').value.trim();
-        const salarioDiario= document.getElementById('inpSalario').value.trim();
-        const fechaIngreso = document.getElementById('inpFecha').value.trim();
+        const nombre        = document.getElementById('inpNombre').value.trim();
+        const pin           = document.getElementById('inpPin').value.trim();
+        const salarioDiario = document.getElementById('inpSalario').value.trim();
+        const fechaIngreso  = document.getElementById('inpFecha').value.trim();
         if (!nombre || !pin || !salarioDiario) {
           alert('Llena todos los campos obligatorios');
           return;
@@ -213,6 +214,15 @@
         }
       });
     }
+
+    // ――――― Resumen por Empleado ―――――
+    const btnResumen = document.getElementById('btnResumen');
+    if (btnResumen) {
+      btnResumen.addEventListener('click', () => {
+        window.location.href = 'resumen.html';
+      });
+    }
+
   </script>
 </body>
 </html>
