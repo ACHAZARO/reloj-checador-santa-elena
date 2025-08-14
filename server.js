@@ -240,9 +240,41 @@ app.post('/api/empleados', async (req, res) => {
   }
 });
 
-// ───────────── Arranque del servidor ─────────────
+// 
+// --- Resumen por empleado ---
+app.get('/api/empleados/resumen', async (req, res) => {
+  try {
+    const empSnap = await firestore.collection('empleados')
+      .where('deleted', '==', false).get();
+    const resumen = [];
+    for (const doc of empSnap.docs) {
+      const empData = doc.data();
+      // Suma las horas trabajadas del empleado
+      const regsSnap = await firestore.collection('registros')
+        .where('id_empleado', '==', doc.id).get();
+      let totalHoras = 0;
+      regsSnap.forEach(rDoc => {
+        const horas = rDoc.data().horas_trabajadas;
+        if (horas) totalHoras += parseFloat(horas);
+      });
+      resumen.push({
+        id: doc.id,
+        nombre: empData.nombre,
+        fechaIngreso: empData.fechaIngreso || empData.createdAt || null,
+        totalHoras: +totalHoras.toFixed(2),
+      });
+    }
+    res.json(resumen);
+  } catch (err) {
+    console.error('Error generando resumen:', err);
+    res.status(500).json({ error: 'server' });
+  }
+});
+
+───────────── Arranque del servidor ─────────────
 app.listen(PORT, () => {
   console.log(`Servidor v2.1 corriendo en puerto ${PORT}`);
 });
 
 module.exports = app;
+
