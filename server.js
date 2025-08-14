@@ -3,11 +3,11 @@
 /* -------------------------------------------------
    IMPORTS
 --------------------------------------------------*/
-const express      = require('express');
-const cors         = require('cors');
-const jwt          = require('jsonwebtoken');
+const express       = require('express');
+const cors          = require('cors');
+const jwt           = require('jsonwebtoken');
 const { Firestore } = require('@google-cloud/firestore');
-const    moment       = require('moment-timezone');
+const moment        = require('moment-timezone');
 
 const payrollRoutes = require('./payroll/routes');
 
@@ -34,7 +34,6 @@ app.use(cors({ origin: '*' }));   // En producción puedes poner tu URL de Netli
 app.use(express.json());
 app.use('/api/payroll', payrollRoutes);
 
-
 /* -------------------------------------------------
    CONFIGURACIÓN
 --------------------------------------------------*/
@@ -43,8 +42,7 @@ const CONFIG_BASE = {
   establecimiento: { lat: 19.533642, lng: -96.892007 },
   toleranciaMetros: 150,
   jwtSecret: 'RelojChecadorClaveSúperSecreta_2025!',
-gerenteKey: 'CHEMEX17',
-
+  gerenteKey: 'CHEMEX17',
 };
 
 const firestore = new Firestore({ databaseId: 'reloj-checador-db' });
@@ -139,18 +137,18 @@ app.post('/api/checada', [loadData, locationCheck, verifyPin], async (req, res) 
 
       const nuevo = {
         id_empleado: empleado.id,
-        nombre     : empleado.nombre,
-        pin        : empleado.pin,
-        fecha      : hoyStr,
-        hora_entrada : ahora.toDate(),
-        hora_salida  : null,
-        token_sesion : token,
+        nombre        : empleado.nombre,
+        pin           : empleado.pin,
+        fecha         : hoyStr,
+        hora_entrada  : ahora.toDate(),
+        hora_salida   : null,
+        token_sesion  : token,
       };
 
       const doc = await registrosRef.add(nuevo);
       return res.status(201).json({
-        success : true,
-        message : 'Entrada registrada.',
+        success  : true,
+        message  : 'Entrada registrada.',
         id_sesion: doc.id,
         token,
       });
@@ -160,7 +158,7 @@ app.post('/api/checada', [loadData, locationCheck, verifyPin], async (req, res) 
     const turnoDoc = snap.docs[0];
     const tokenCli = req.body.token;
     if (tokenCli !== turnoDoc.data().token_sesion) {
-      return res.status(403).json({ success:false, error:'Token inválido.' });
+      return res.status(403).json({ success: false, error:'Token inválido.' });
     }
 
     const horaEnt  = moment(turnoDoc.data().hora_entrada.toDate());
@@ -169,21 +167,20 @@ app.post('/api/checada', [loadData, locationCheck, verifyPin], async (req, res) 
     await turnoDoc.ref.update({
       hora_salida     : ahora.toDate(),
       horas_trabajadas: +horas.toFixed(2),
-  
-  
+    });
 
-           return res.status(200).json({ success: true, message: 'Salida registrada.' });
-);
-catchh (err) {
+    return res.status(200).json({ success: true, message: 'Salida registrada.' });
+  } catch (err) {
     console.error('Error en /api/checada:', err);
-    return res.status(500).json({ success:false, error:'Error procesando la checada.' });
+    return res.status(500).json({ success: false, error:'Error procesando la checada.' });
   }
 });
 
 /* -------------------------------------------------
-   ARRANQUE
+   ARRANQUE Y RUTAS ADICIONALES
 --------------------------------------------------*/
 const PORT = process.env.PORT || 8080;
+
 // ───────────── /api/clave-gerente ─────────────
 app.get('/api/clave-gerente', async (req, res) => {
   try {
@@ -199,11 +196,12 @@ app.get('/api/clave-gerente', async (req, res) => {
     res.status(500).json({ error: 'server' });
   }
 });
-// ──
 
+// ───────────── /api/empleados (listar) ─────────────
 app.get('/api/empleados', async (req, res) => {
   try {
-    const snap = await firestore.collection('empleados').where('deleted', '==', false).get();
+    const snap = await firestore.collection('empleados')
+      .where('deleted', '==', false).get();
     const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     res.json(list);
   } catch (err) {
@@ -212,25 +210,27 @@ app.get('/api/empleados', async (req, res) => {
   }
 });
 
+// ───────────── /api/empleados (crear) ─────────────
 app.post('/api/empleados', async (req, res) => {
   try {
     const { nombre, pin, salarioDiario, fechaIngreso } = req.body;
     if (!nombre || !pin || !salarioDiario) {
       return res.status(400).json({ error: 'Datos incompletos' });
     }
-    const pinSnap = await firestore.collection('empleados').where('pin', '==', pin).get();
+    const pinSnap = await firestore.collection('empleados')
+      .where('pin', '==', pin).get();
     if (!pinSnap.empty) {
       return res.status(409).json({ error: 'PIN ya existe' });
     }
     const nuevoEmpleado = {
       nombre,
       pin,
-      basePayType: 'daily',
-      basePay: parseFloat(salarioDiario),
-      status: 'active',
-      deleted: false,
+      basePayType : 'daily',
+      basePay     : parseFloat(salarioDiario),
+      status      : 'active',
+      deleted     : false,
       fechaIngreso: fechaIngreso ? new Date(fechaIngreso) : new Date(),
-      createdAt: new Date(),
+      createdAt   : new Date(),
     };
     const docRef = await firestore.collection('empleados').add(nuevoEmpleado);
     res.status(201).json({ id: docRef.id, ...nuevoEmpleado });
@@ -239,11 +239,10 @@ app.post('/api/empleados', async (req, res) => {
     res.status(500).json({ error: 'server' });
   }
 });
-────────────────────────────────────────────
+
+// ───────────── Arranque del servidor ─────────────
 app.listen(PORT, () => {
   console.log(`Servidor v2.1 corriendo en puerto ${PORT}`);
 });
+
 module.exports = app;
-
-
-
