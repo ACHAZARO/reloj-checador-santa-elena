@@ -29,17 +29,12 @@ async function generateOneSheetPDF({ period, rows, periodId }) {
   stream.pipe(writeStream);
   doc.pipe(stream);
 
-  // Header with logo and company name
-  const headerY = doc.y;
-  const logoWidth = 60;
-  const logoHeight = 60;
-  if (LOGO_BASE64) {
-    doc.image('data:image/png;base64,' + LOGO_BASE64, doc.x, headerY, { width: logoWidth });
-    doc.font('Helvetica-Bold').fontSize(20).text('Santa Elena', doc.x + logoWidth + 10, headerY + 15);
-  } else {
+  // Header with company name onlynd
+
+  const headerYY = doc.y;
     doc.font('Helvetica-Bold').fontSize(20).text('Santa Elena', doc.x, headerY);
-  }
-  doc.moveDown(2);
+    doc.moveDown(2);
+
 
   // Subtitle with report name and period
   doc.font('Helvetica-Bold').fontSize(16).text('Corte de Nómina', { continued: true })
