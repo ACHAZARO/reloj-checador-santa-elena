@@ -271,7 +271,7 @@ app.get('/api/empleados/resumen', async (req, res) => {
   }
 });
 
-───────────── Arranque del servidor ─────────────
+console.log("Arranque del servidor");
 app.listen(PORT, () => {
   console.log(`Servidor v2.1 corriendo en puerto ${PORT}`);
 });
