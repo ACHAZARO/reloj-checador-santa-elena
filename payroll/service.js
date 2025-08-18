@@ -1,7 +1,7 @@
 const admin = require("firebase-admin");
 if (!admin.apps.length) admin.initializeApp();
 const dayjs = require('dayjs');
-const { generateOneSheetPDF } = require('./sheetPdf');
+let generateOneSheetPDF; try { generateOneSheetPDF = require('./sheetPdf').generateOneSheetPDF; } catch (e) { console.warn('PDF module not ready:', e.message); }
 
 const db = admin.firestore();
 
