@@ -1,3 +1,5 @@
+const admin = require("firebase-admin");
+if (!admin.apps.length) admin.initializeApp();
 const admin = require('firebase-admin');
 const PDFDocument = require('pdfkit');
 const dayjs = require('dayjs');
