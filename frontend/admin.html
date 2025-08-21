@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <title>Panel Gerente – Reloj Checador</title>
   <script src="https://cdn.tailwindcss.com"></script>
+<script>window.API_URL="https://reloj-checador-se.uc.r.appspot.com";</script>
 </head>
 <body class="bg-gray-100 p-4">  <!-- ――――― MODAL LOGIN ――――― -->
   <div id="modal" class="fixed inset-0 flex items-center justify-center bg-black/40">
@@ -180,10 +181,14 @@
   #fabAdd { position:fixed; right:20px; bottom:20px; width:56px; height:56px; border-radius:50%;
     background:#1e40af; color:#fff; display:grid; place-items:center; box-shadow:0 10px 25px rgba(0,0,0,.25);
     border:none; cursor:pointer; font-size:28px; line-height:1; z-index:9999; }
+#fabAdd{ z-index: 10050 !important; }
 /* forzar stacking */
 #fabAdd{ z-index: 10050 !important; }
+#fabAdd{ z-index: 10050 !important; }
   #fabAdd:active{ transform: translateY(1px) }
+#fabAdd{ z-index: 10050 !important; }
 /* forzar stacking */
+#fabAdd{ z-index: 10050 !important; }
 #fabAdd{ z-index: 10050 !important; }
   .hidden{ display:none!important; }
   #modalOverlay{ position:fixed; inset:0; background:rgba(0,0,0,.45); display:grid; place-items:center; padding:16px; z-index:9998; }
@@ -195,7 +200,9 @@
   .btn{ background:#1e40af; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; }
   .btn.secondary{ background:#e5e7eb; color:#111827; }
   @media(max-width:480px){ .row{ grid-template-columns:1fr; } #fabAdd{ right:16px; bottom:16px; }
+#fabAdd{ z-index: 10050 !important; }
 /* forzar stacking */
+#fabAdd{ z-index: 10050 !important; }
 #fabAdd{ z-index: 10050 !important; } }
 </style><button id="fabAdd" title="Agregar empleado">+</button><div id="addModal" class="hidden">
   <div id="modalOverlay">
@@ -585,4 +592,25 @@
   });
 })();
 </script>
-<!-- ====== /UI modal ====== -->
+<!-- ====== /UI modal ====== --><script>
+(function(){
+  function rm(el){ if(el && el.parentElement){ el.parentElement.removeChild(el); } }  // Quita FABs duplicados: uno viejo (#rc-add-emp-btn), otros .fab-add-emp; conserva sólo #fabAdd
+  document.addEventListener('DOMContentLoaded', function(){
+    document.querySelectorAll('#rc-add-emp-btn, .fab-add-emp').forEach(function(btn){
+      if (btn.id !== 'fabAdd') rm(btn);
+    }
+#fabAdd{ z-index: 10050 !important; });    // Oculta el bloque legacy del botón "Agregar" (no el del modal)
+    var legacyBtn = Array.from(document.querySelectorAll('button'))
+      .find(function(b){ return b.textContent.trim().toLowerCase()==='agregar' && !b.closest('#addModal'); });
+    if (legacyBtn){
+      var box = legacyBtn.closest('div');
+      if (box && box.offsetHeight < 80 && box.parentElement) box = box.parentElement; // sube un nivel si hace falta
+      if (box){ box.style.display='none'; }
+      // Por si queda el título "Agregar empleado"
+      var tit = Array.from(document.querySelectorAll('h1,h2,h3,strong'))
+        .find(function(el){ return /agregar empleado/i.test(el.textContent) && !el.closest('#addModal'); });
+      if (tit){ (tit.closest('div') || tit).style.display='none'; }
+    }
+  });
+})();
+</script>
