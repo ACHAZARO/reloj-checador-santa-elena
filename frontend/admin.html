@@ -5,35 +5,21 @@
   <title>Panel Gerente – Reloj Checador</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 p-4">
-
-  <!-- ――――― MODAL LOGIN ――――― -->
+<body class="bg-gray-100 p-4">  <!-- ――――― MODAL LOGIN ――――― -->
   <div id="modal" class="fixed inset-0 flex items-center justify-center bg-black/40">
     <div class="bg-white p-6 rounded shadow w-72">
-      <h2 class="text-lg font-bold mb-4">Clave de gerente</h2>
-
-      <input id="inpPwd"
+      <h2 class="text-lg font-bold mb-4">Clave de gerente</h2>      <input id="inpPwd"
              type="password"
              class="border w-full p-1 mb-2"
-             placeholder="Contraseña" />
-
-      <label class="text-sm flex items-center mb-3 gap-1 cursor-pointer">
+             placeholder="Contraseña" />      <label class="text-sm flex items-center mb-3 gap-1 cursor-pointer">
         <input type="checkbox" id="chkShow">
         <span>Mostrar contraseña</span>
-      </label>
-
-      <button id="btnLogin"
+      </label>      <button id="btnLogin"
               class="bg-blue-600 text-white w-full py-1 rounded opacity-50 cursor-not-allowed"
-              disabled>Entrar</button>
-
-      <p id="msgErr"  class="text-red-600 text-sm mt-2 hidden">Clave incorrecta</p>
+              disabled>Entrar</button>      <p id="msgErr"  class="text-red-600 text-sm mt-2 hidden">Clave incorrecta</p>
       <p id="msgLoad" class="text-gray-600 text-sm mt-2">Cargando clave…</p>
     </div>
-  </div>
-
-  <h1 class="text-2xl font-bold mb-4">Registros del Día</h1>
-
-  <!-- Formulario para alta de empleado -->
+  </div>  <h1 class="text-2xl font-bold mb-4">Registros del Día</h1>  <!-- Formulario para alta de empleado -->
   <form id="formNuevoEmpleado" class="p-4 bg-white rounded shadow mb-4">
     <h3 class="text-lg font-bold mb-2">Agregar empleado</h3>
     <div class="mb-2">
@@ -53,17 +39,13 @@
       <input id="inpFecha" type="date" class="border w-full p-1">
     </div>
     <button id="btnAgregarEmpleado" type="button" class="bg-blue-500 text-white px-4 py-2 rounded">Agregar</button>
-  </form>
-
-  <div class="mb-4">
+  </form>  <div class="mb-4">
     Fecha:
     <input id="fecha" type="date" class="border p-1" />
     <button id="btnCargar" class="bg-blue-600 text-white px-3 py-1 rounded">Cargar</button>
     <button id="btnCSV"   class="bg-green-600 text-white px-3 py-1 rounded ml-2">Descargar CSV</button>
     <button id="btnResumen" class="bg-purple-600 text-white px-3 py-1 rounded ml-2">Resumen</button>
-  </div>
-
-  <table id="tbl" class="min-w-full bg-white border">
+  </div>  <table id="tbl" class="min-w-full bg-white border">
     <thead>
       <tr class="bg-gray-200">
         <th class="border px-2 py-1">Empleado</th>
@@ -74,20 +56,14 @@
       </tr>
     </thead>
     <tbody></tbody>
-  </table>
-
-  <script>
-    const API = 'https://reloj-checador-se.uc.r.appspot.com';
-
-    // Elementos del modal
+  </table>  <script>
+    const API = 'https://reloj-checador-se.uc.r.appspot.com';    // Elementos del modal
     const modal    = document.getElementById('modal');
     const inpPwd   = document.getElementById('inpPwd');
     const btnLogin = document.getElementById('btnLogin');
     const chkShow  = document.getElementById('chkShow');
     const msgErr   = document.getElementById('msgErr');
-    const msgLoad  = document.getElementById('msgLoad');
-
-    // Muestra mensaje de error
+    const msgLoad  = document.getElementById('msgLoad');    // Muestra mensaje de error
     function showError(text) {
       msgErr.textContent = text;
       msgErr.classList.remove('hidden');
@@ -95,9 +71,7 @@
     // Oculta mensaje de error
     function hideError() {
       msgErr.classList.add('hidden');
-    }
-
-    // Inicializa proceso de login dinámico
+    }    // Inicializa proceso de login dinámico
     async function initLogin() {
       const storedKey = localStorage.getItem('gerenteKey');
       if (storedKey) {
@@ -108,14 +82,10 @@
         const res = await fetch(`${API}/api/clave-gerente`);
         if (!res.ok) throw new Error(res.statusText);
         const { valor } = await res.json();
-        const claveReal = (valor || '').trim();
-
-        // desbloquea botón
+        const claveReal = (valor || '').trim();        // desbloquea botón
         msgLoad.textContent = '';
         btnLogin.disabled = false;
-        btnLogin.classList.remove('opacity-50', 'cursor-not-allowed');
-
-        btnLogin.addEventListener('click', () => {
+        btnLogin.classList.remove('opacity-50', 'cursor-not-allowed');        btnLogin.addEventListener('click', () => {
           hideError();
           if (inpPwd.value.trim() === claveReal) {
             localStorage.setItem('gerenteKey', claveReal);
@@ -128,20 +98,12 @@
         msgLoad.textContent = 'Error al cargar clave';
         console.error(e);
       }
-    }
-
-    // Toggle mostrar/ocultar contraseña
+    }    // Toggle mostrar/ocultar contraseña
     chkShow.addEventListener('change', () => {
       inpPwd.type = chkShow.checked ? 'text' : 'password';
-    });
-
-    initLogin();
-
-    // ――――― FUNCIONES DE REGISTROS ―――――
+    });    initLogin();    // ――――― FUNCIONES DE REGISTROS ―――――
     document.getElementById('btnCargar').onclick = cargar;
-    document.getElementById('btnCSV').onclick   = descargarCSV;
-
-    async function cargar() {
+    document.getElementById('btnCSV').onclick   = descargarCSV;    async function cargar() {
       const fecha = document.getElementById('fecha').value;
       const key   = localStorage.getItem('gerenteKey');
       const res   = await fetch(`${API}/api/registros?fecha=${fecha}`, {
@@ -149,9 +111,7 @@
       });
       const { data } = await res.json();
       pintar(data);
-    }
-
-    function pintar(arr) {
+    }    function pintar(arr) {
       const tbody = document.querySelector('#tbl tbody');
       tbody.innerHTML = '';
       arr.forEach(r => {
@@ -164,15 +124,11 @@
             <td class="border px-2">${r.incidencia       ?? ''}</td>
           </tr>`);
       });
-    }
-
-    function fmt(ts) {
+    }    function fmt(ts) {
       if (!ts) return '';
       const d = new Date(ts._seconds * 1000);
       return d.toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit' });
-    }
-
-    function descargarCSV() {
+    }    function descargarCSV() {
       const rows = [['Empleado','Entrada','Salida','Horas','Incidencia']];
       document.querySelectorAll('#tbl tbody tr').forEach(tr => {
         rows.push([...tr.children].map(td => td.textContent));
@@ -182,9 +138,7 @@
         href: URL.createObjectURL(blob),
         download: 'registros.csv'
       }).click();
-    }
-
-    // ――――― ALTA DE EMPLEADOS ―――――
+    }    // ――――― ALTA DE EMPLEADOS ―――――
     const btnAgregarEmpleado = document.getElementById('btnAgregarEmpleado');
     if (btnAgregarEmpleado) {
       btnAgregarEmpleado.addEventListener('click', async () => {
@@ -213,187 +167,75 @@
           alert('Error al conectar con el servidor');
         }
       });
-    }
-
-    // ――――― Resumen por Empleado ―――――
+    }    // ――――― Resumen por Empleado ―――――
     const btnResumen = document.getElementById('btnResumen');
     if (btnResumen) {
       btnResumen.addEventListener('click', () => {
         window.location.href = 'resumen.html';
       });
-    }
+    }  </script>
 
-  </script>
 <!-- MODAL EMPLEADOS START -->
 <style>
-  /* Botón flotante */
-  .fab-add-emp {
-    position: fixed; right: 24px; bottom: 24px;
-    width: 56px; height: 56px; border-radius: 9999px;
-    display: flex; align-items: center; justify-content: center;
-    background: #2563eb; color: white; font-size: 28px;
-    box-shadow: 0 10px 15px rgba(0,0,0,.15); cursor: pointer; z-index: 9999;
-  }
-  .fab-add-emp:hover { filter: brightness(1.05); }
-
-  /* Modal */
-  .emp-modal-backdrop {
-    position: fixed; inset: 0; background: rgba(0,0,0,.35);
-    display: none; align-items: center; justify-content: center; z-index: 9998;
-  }
-  .emp-modal {
-    width: 100%; max-width: 560px; background: white; border-radius: 16px; padding: 20px;
-    box-shadow: 0 10px 20px rgba(0,0,0,.25);
-  }
-  .emp-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .emp-row > div { display: flex; flex-direction: column; gap: 6px; }
-  .emp-modal h2 { font-size: 20px; font-weight: 700; margin-bottom: 10px; }
-  .emp-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
-  .btn { border-radius: 8px; padding: 10px 14px; border: 1px solid #e5e7eb; cursor: pointer; }
-  .btn-primary { background: #2563eb; color: #fff; border-color: #2563eb; }
-  .text-sm { font-size: 12px; color: #6b7280; }
+  .table-wrapper { overflow-x: auto; }
+  #fabAdd { position:fixed; right:20px; bottom:20px; width:56px; height:56px; border-radius:50%;
+    background:#1e40af; color:#fff; display:grid; place-items:center; box-shadow:0 10px 25px rgba(0,0,0,.25);
+    border:none; cursor:pointer; font-size:28px; line-height:1; z-index:9999; }
+  #fabAdd:active{ transform: translateY(1px) }
+  .hidden{ display:none!important; }
+  #modalOverlay{ position:fixed; inset:0; background:rgba(0,0,0,.45); display:grid; place-items:center; padding:16px; z-index:9998; }
+  .modal-card{ width:100%; max-width:520px; background:#fff; border-radius:12px; box-shadow:0 20px 50px rgba(0,0,0,.35); overflow:hidden; }
+  .modal-header{ padding:14px 18px; background:#111827; color:#fff; display:flex; justify-content:space-between; align-items:center; }
+  .modal-body{ padding:16px; }
+  .row{ display:grid; gap:10px; grid-template-columns:1fr 1fr; }
+  .field{ padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; }
+  .btn{ background:#1e40af; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; }
+  .btn.secondary{ background:#e5e7eb; color:#111827; }
+  @media(max-width:480px){ .row{ grid-template-columns:1fr; } #fabAdd{ right:16px; bottom:16px; } }
 </style>
 
-<!-- FAB -->
-<div id="fabAddEmp" class="fab-add-emp" title="Agregar empleado">＋</div>
+<button id="fabAdd" title="Agregar empleado">+</button>
 
-<!-- Modal -->
-<div id="empModalBackdrop" class="emp-modal-backdrop" aria-hidden="true">
-  <div class="emp-modal" role="dialog" aria-modal="true">
-    <h2>Agregar empleado</h2>
-    <p class="text-sm">Completa los datos mínimos. (Después podremos editar horarios/restricciones.)</p>
-
-    <div class="emp-row" style="margin-top:10px">
-      <div>
-        <label>Nombre</label>
-        <input id="emp_nombre" class="form-control" placeholder="Ej. Juan Pérez"/>
+<div id="addModal" class="hidden">
+  <div id="modalOverlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <strong>Agregar empleado</strong>
+        <button id="modalClose" class="btn secondary" type="button">Cerrar</button>
       </div>
-      <div>
-        <label>PIN</label>
-        <input id="emp_pin" class="form-control" placeholder="Ej. 1234" />
+      <div class="modal-body">
+        <form id="addEmployeeForm">
+          <div class="row">
+            <div><label>Nombre</label><input id="empNombre" class="field" placeholder="Nombre completo" required></div>
+            <div><label>PIN</label><input id="empPin" class="field" placeholder="0000" inputmode="numeric" required></div>
+          </div>
+          <div class="row">
+            <div><label>Sueldo diario</label><input id="empSalario" class="field" type="number" min="0" step="0.01" placeholder="300" required></div>
+            <div><label>Fecha de ingreso</label><input id="empFecha" class="field" type="date"></div>
+          </div>
+          <hr style="margin:14px 0;border:none;border-top:1px solid #e5e7eb">
+          <div class="row">
+            <div><label>Horas diarias</label><input id="empHoras" class="field" type="number" min="1" max="12" placeholder="8"></div>
+            <div><label>Días laborables</label><input id="empDias" class="field" placeholder="L, M, X, J, V"></div>
+          </div>
+          <div class="row">
+            <div><label>Hora entrada</label><input id="empHoraIn" class="field" type="time" value="09:00"></div>
+            <div><label>Hora salida</label><input id="empHoraOut" class="field" type="time" value="17:00"></div>
+          </div>
+          <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:16px;">
+            <button type="button" class="btn secondary" onclick="document.getElementById('addEmployeeForm').reset()">Limpiar</button>
+            <button type="submit" class="btn">Guardar</button>
+          </div>
+        </form>
       </div>
-    </div>
-
-    <div class="emp-row" style="margin-top:10px">
-      <div>
-        <label>Sueldo diario</label>
-        <input id="emp_salario" type="number" class="form-control" placeholder="Ej. 300" />
-      </div>
-      <div>
-        <label>Fecha de ingreso</label>
-        <input id="emp_fecha" type="date" class="form-control" />
-      </div>
-    </div>
-
-    <details style="margin-top:12px">
-      <summary style="cursor:pointer">Opcionales (horarios / días laborables)</summary>
-      <div class="emp-row" style="margin-top:10px">
-        <div>
-          <label>Entrada (hh:mm)</label>
-          <input id="emp_hora_in" class="form-control" placeholder="09:00" />
-        </div>
-        <div>
-          <label>Salida (hh:mm)</label>
-          <input id="emp_hora_out" class="form-control" placeholder="17:00" />
-        </div>
-      </div>
-      <div style="margin-top:10px">
-        <label>Días laborables</label>
-        <input id="emp_dias" class="form-control" placeholder="L, M, X, J, V, S" />
-      </div>
-      <div style="margin-top:10px">
-        <label>Horas diarias</label>
-        <input id="emp_horas_d" type="number" class="form-control" placeholder="8" />
-      </div>
-    </details>
-
-    <div id="emp_msg" class="text-sm" style="min-height:18px;margin-top:8px"></div>
-
-    <div class="emp-actions">
-      <button id="btnEmpCancel" class="btn">Cancelar</button>
-      <button id="btnEmpSave" class="btn btn-primary">Guardar</button>
     </div>
   </div>
 </div>
 
-<script>
-(function(){
-  const $ = (s) => document.querySelector(s);
-  const api = (window.API_URL || 'https://reloj-checador-se.uc.r.appspot.com') + '/api';
-
-  function openModal(){ $('#empModalBackdrop').style.display = 'flex'; }
-  function closeModal(){ $('#empModalBackdrop').style.display = 'none'; $('#emp_msg').textContent=''; }
-
-  document.addEventListener('DOMContentLoaded', () => {
-    // Si existe la caja grande de "Agregar empleado" arriba, la escondemos para usar el modal
-    const titulo = Array.from(document.querySelectorAll('h5,h4,h3,h2,h1')).find(h => /agregar empleado/i.test(h.textContent||''));
-    if (titulo) {
-      const card = titulo.closest('.card, .shadow, form, div');
-      if (card) card.style.display = 'none';
-    }
-
-    $('#fabAddEmp').addEventListener('click', openModal);
-    $('#btnEmpCancel').addEventListener('click', closeModal);
-
-    $('#btnEmpSave').addEventListener('click', async () => {
-      const nombre = $('#emp_nombre').value.trim();
-      const pin = $('#emp_pin').value.trim();
-      const salarioDiario = Number($('#emp_salario').value);
-      const fechaIngreso = $('#emp_fecha').value ? new Date($('#emp_fecha').value).toISOString() : null;
-
-      if (!nombre || !pin || !salarioDiario || !fechaIngreso) {
-        $('#emp_msg').textContent = 'Completa nombre, PIN, sueldo y fecha de ingreso.';
-        return;
-      }
-
-      // Campos opcionales (el backend los puede ignorar si aún no los soporta)
-      const opcionales = {
-        horario_entrada: $('#emp_hora_in').value.trim() || null,
-        horario_salida : $('#emp_hora_out').value.trim() || null,
-        dias_laborables: $('#emp_dias').value.trim() || null,
-        horas_diarias  : $('#emp_horas_d').value ? Number($('#emp_horas_d').value) : null,
-      };
-
-      $('#btnEmpSave').disabled = true;
-      $('#emp_msg').textContent = 'Guardando…';
-
-      try {
-        // 1) Alta mínima (lo que hoy acepta el backend)
-        const r1 = await fetch(api + '/empleados', {
-          method:'POST',
-          headers:{ 'Content-Type':'application/json' },
-          body: JSON.stringify({ nombre, pin, salarioDiario, fechaIngreso })
-        });
-        const j1 = await r1.json();
-        if (!r1.ok) throw new Error(j1?.error || 'Error creando empleado');
-
-        // 2) Intento guardar opcionales si el backend ya lo soporta (silencioso si 404)
-        if (j1?.id) {
-          try {
-            await fetch(api + '/empleados/' + j1.id + '/config', {
-              method:'PUT',
-              headers:{ 'Content-Type':'application/json' },
-              body: JSON.stringify(opcionales)
-            });
-          } catch(_e){ /* ignoramos si no existe */ }
-        }
-
-        $('#emp_msg').textContent = 'Empleado creado.';
-        setTimeout(()=>{ closeModal(); location.reload(); }, 800);
-      } catch(e) {
-        $('#emp_msg').textContent = e.message || 'Error guardando empleado.';
-      } finally {
-        $('#btnEmpSave').disabled = false;
-      }
-    });
-  });
-})();
-</script>
+<script src="./admin.js?v=20250821"></script>
 <!-- MODAL EMPLEADOS END -->
 </body>
-</html>
-
-<!-- ====== UI: botón flotante + modal para agregar empleado ====== -->
+</html><!-- ====== UI: botón flotante + modal para agregar empleado ====== -->
 <style>
   #rc-add-emp-btn{
     position: fixed; right: 24px; bottom: 24px;
@@ -422,11 +264,7 @@
   .rc-modal footer{ display:flex; gap:8px; justify-content:flex-end; margin-top:12px; }
   .rc-btn{ padding:10px 14px; border-radius:8px; border:1px solid #d1d5db; background:#fff; cursor:pointer; }
   .rc-btn.primary{ background:#2563eb; color:#fff; border-color:#2563eb; }
-</style>
-
-<button id="rc-add-emp-btn" title="Agregar empleado">＋</button>
-
-<div id="rc-emp-modal" class="rc-modal-overlay" aria-hidden="true">
+</style><button id="rc-add-emp-btn" title="Agregar empleado">＋</button><div id="rc-emp-modal" class="rc-modal-overlay" aria-hidden="true">
   <div class="rc-modal" role="dialog" aria-modal="true">
     <header>Agregar empleado</header>
     <div class="rc-grid">
@@ -445,9 +283,7 @@
       <div class="rc-field">
         <label>Fecha de ingreso</label>
         <input id="rc_ingreso" type="date" />
-      </div>
-
-      <!-- Campos de horario/configuración -->
+      </div>      <!-- Campos de horario/configuración -->
       <div class="rc-field">
         <label>Horas diarias</label>
         <input id="rc_horas_diarias" type="number" step="0.5" placeholder="8" />
@@ -470,47 +306,29 @@
       <button class="rc-btn primary" id="rc_guardar">Guardar</button>
     </footer>
   </div>
-</div>
-
-<script>
+</div><script>
 (function(){
-  const API_URL = window.API_URL || 'https://reloj-checador-se.uc.r.appspot.com';
-
-  const btn = document.getElementById('rc-add-emp-btn');
+  const API_URL = window.API_URL || 'https://reloj-checador-se.uc.r.appspot.com';  const btn = document.getElementById('rc-add-emp-btn');
   const modal = document.getElementById('rc-emp-modal');
   const cancelar = document.getElementById('rc_cancelar');
-  const guardar = document.getElementById('rc_guardar');
-
-  const $ = id => document.getElementById(id);
-
-  function openModal(){ modal.classList.add('show'); modal.setAttribute('aria-hidden','false'); }
-  function closeModal(){ modal.classList.remove('show'); modal.setAttribute('aria-hidden','true'); }
-
-  btn.addEventListener('click', openModal);
+  const guardar = document.getElementById('rc_guardar');  const $ = id => document.getElementById(id);  function openModal(){ modal.classList.add('show'); modal.setAttribute('aria-hidden','false'); }
+  function closeModal(){ modal.classList.remove('show'); modal.setAttribute('aria-hidden','true'); }  btn.addEventListener('click', openModal);
   cancelar.addEventListener('click', closeModal);
-  modal.addEventListener('click', (e)=>{ if(e.target === modal) closeModal(); });
-
-  guardar.addEventListener('click', async ()=>{
+  modal.addEventListener('click', (e)=>{ if(e.target === modal) closeModal(); });  guardar.addEventListener('click', async ()=>{
     const payload = {
       nombre: $('rc_nombre').value.trim(),
       pin: $('rc_pin').value.trim(),
       salarioDiario: Number($('rc_salario').value),
-      fechaIngreso: $('rc_ingreso').value ? new Date($('rc_ingreso').value).toISOString() : null,
-
-      // nuevos campos de configuración
+      fechaIngreso: $('rc_ingreso').value ? new Date($('rc_ingreso').value).toISOString() : null,      // nuevos campos de configuración
       horas_diarias: $('rc_horas_diarias').value ? Number($('rc_horas_diarias').value) : null,
       dias_laborables: $('rc_dias_laborables').value.trim() || null,
       horario_entrada: $('rc_hora_entrada').value || null,
       horario_salida: $('rc_hora_salida').value || null,
-    };
-
-    // Validaciones básicas
+    };    // Validaciones básicas
     if(!payload.nombre || !payload.pin || !payload.salarioDiario){
       alert('Nombre, PIN y Sueldo diario son obligatorios.');
       return;
-    }
-
-    try{
+    }    try{
       const res = await fetch(API_URL + '/api/empleados', {
         method:'POST',
         headers:{ 'Content-Type':'application/json' },
@@ -534,9 +352,7 @@
   });
 })();
 </script>
-<!-- ====== /UI modal ====== -->
-
-<!-- ====== UI: botón flotante + modal para agregar empleado ====== -->
+<!-- ====== /UI modal ====== --><!-- ====== UI: botón flotante + modal para agregar empleado ====== -->
 <style>
   #rc-add-emp-btn{
     position: fixed; right: 24px; bottom: 24px;
@@ -565,11 +381,7 @@
   .rc-modal footer{ display:flex; gap:8px; justify-content:flex-end; margin-top:12px; }
   .rc-btn{ padding:10px 14px; border-radius:8px; border:1px solid #d1d5db; background:#fff; cursor:pointer; }
   .rc-btn.primary{ background:#2563eb; color:#fff; border-color:#2563eb; }
-</style>
-
-<button id="rc-add-emp-btn" title="Agregar empleado">＋</button>
-
-<div id="rc-emp-modal" class="rc-modal-overlay" aria-hidden="true">
+</style><button id="rc-add-emp-btn" title="Agregar empleado">＋</button><div id="rc-emp-modal" class="rc-modal-overlay" aria-hidden="true">
   <div class="rc-modal" role="dialog" aria-modal="true">
     <header>Agregar empleado</header>
     <div class="rc-grid">
@@ -588,9 +400,7 @@
       <div class="rc-field">
         <label>Fecha de ingreso</label>
         <input id="rc_ingreso" type="date" />
-      </div>
-
-      <!-- Campos de horario/configuración -->
+      </div>      <!-- Campos de horario/configuración -->
       <div class="rc-field">
         <label>Horas diarias</label>
         <input id="rc_horas_diarias" type="number" step="0.5" placeholder="8" />
@@ -613,47 +423,29 @@
       <button class="rc-btn primary" id="rc_guardar">Guardar</button>
     </footer>
   </div>
-</div>
-
-<script>
+</div><script>
 (function(){
-  const API_URL = window.API_URL || 'https://reloj-checador-se.uc.r.appspot.com';
-
-  const btn = document.getElementById('rc-add-emp-btn');
+  const API_URL = window.API_URL || 'https://reloj-checador-se.uc.r.appspot.com';  const btn = document.getElementById('rc-add-emp-btn');
   const modal = document.getElementById('rc-emp-modal');
   const cancelar = document.getElementById('rc_cancelar');
-  const guardar = document.getElementById('rc_guardar');
-
-  const $ = id => document.getElementById(id);
-
-  function openModal(){ modal.classList.add('show'); modal.setAttribute('aria-hidden','false'); }
-  function closeModal(){ modal.classList.remove('show'); modal.setAttribute('aria-hidden','true'); }
-
-  btn.addEventListener('click', openModal);
+  const guardar = document.getElementById('rc_guardar');  const $ = id => document.getElementById(id);  function openModal(){ modal.classList.add('show'); modal.setAttribute('aria-hidden','false'); }
+  function closeModal(){ modal.classList.remove('show'); modal.setAttribute('aria-hidden','true'); }  btn.addEventListener('click', openModal);
   cancelar.addEventListener('click', closeModal);
-  modal.addEventListener('click', (e)=>{ if(e.target === modal) closeModal(); });
-
-  guardar.addEventListener('click', async ()=>{
+  modal.addEventListener('click', (e)=>{ if(e.target === modal) closeModal(); });  guardar.addEventListener('click', async ()=>{
     const payload = {
       nombre: $('rc_nombre').value.trim(),
       pin: $('rc_pin').value.trim(),
       salarioDiario: Number($('rc_salario').value),
-      fechaIngreso: $('rc_ingreso').value ? new Date($('rc_ingreso').value).toISOString() : null,
-
-      // nuevos campos de configuración
+      fechaIngreso: $('rc_ingreso').value ? new Date($('rc_ingreso').value).toISOString() : null,      // nuevos campos de configuración
       horas_diarias: $('rc_horas_diarias').value ? Number($('rc_horas_diarias').value) : null,
       dias_laborables: $('rc_dias_laborables').value.trim() || null,
       horario_entrada: $('rc_hora_entrada').value || null,
       horario_salida: $('rc_hora_salida').value || null,
-    };
-
-    // Validaciones básicas
+    };    // Validaciones básicas
     if(!payload.nombre || !payload.pin || !payload.salarioDiario){
       alert('Nombre, PIN y Sueldo diario son obligatorios.');
       return;
-    }
-
-    try{
+    }    try{
       const res = await fetch(API_URL + '/api/empleados', {
         method:'POST',
         headers:{ 'Content-Type':'application/json' },
@@ -677,9 +469,7 @@
   });
 })();
 </script>
-<!-- ====== /UI modal ====== -->
-
-<!-- ====== UI: botón flotante + modal para agregar empleado ====== -->
+<!-- ====== /UI modal ====== --><!-- ====== UI: botón flotante + modal para agregar empleado ====== -->
 <style>
   #rc-add-emp-btn{
     position: fixed; right: 24px; bottom: 24px;
@@ -708,11 +498,7 @@
   .rc-modal footer{ display:flex; gap:8px; justify-content:flex-end; margin-top:12px; }
   .rc-btn{ padding:10px 14px; border-radius:8px; border:1px solid #d1d5db; background:#fff; cursor:pointer; }
   .rc-btn.primary{ background:#2563eb; color:#fff; border-color:#2563eb; }
-</style>
-
-<button id="rc-add-emp-btn" title="Agregar empleado">＋</button>
-
-<div id="rc-emp-modal" class="rc-modal-overlay" aria-hidden="true">
+</style><button id="rc-add-emp-btn" title="Agregar empleado">＋</button><div id="rc-emp-modal" class="rc-modal-overlay" aria-hidden="true">
   <div class="rc-modal" role="dialog" aria-modal="true">
     <header>Agregar empleado</header>
     <div class="rc-grid">
@@ -731,9 +517,7 @@
       <div class="rc-field">
         <label>Fecha de ingreso</label>
         <input id="rc_ingreso" type="date" />
-      </div>
-
-      <!-- Campos de horario/configuración -->
+      </div>      <!-- Campos de horario/configuración -->
       <div class="rc-field">
         <label>Horas diarias</label>
         <input id="rc_horas_diarias" type="number" step="0.5" placeholder="8" />
@@ -756,47 +540,29 @@
       <button class="rc-btn primary" id="rc_guardar">Guardar</button>
     </footer>
   </div>
-</div>
-
-<script>
+</div><script>
 (function(){
-  const API_URL = window.API_URL || 'https://reloj-checador-se.uc.r.appspot.com';
-
-  const btn = document.getElementById('rc-add-emp-btn');
+  const API_URL = window.API_URL || 'https://reloj-checador-se.uc.r.appspot.com';  const btn = document.getElementById('rc-add-emp-btn');
   const modal = document.getElementById('rc-emp-modal');
   const cancelar = document.getElementById('rc_cancelar');
-  const guardar = document.getElementById('rc_guardar');
-
-  const $ = id => document.getElementById(id);
-
-  function openModal(){ modal.classList.add('show'); modal.setAttribute('aria-hidden','false'); }
-  function closeModal(){ modal.classList.remove('show'); modal.setAttribute('aria-hidden','true'); }
-
-  btn.addEventListener('click', openModal);
+  const guardar = document.getElementById('rc_guardar');  const $ = id => document.getElementById(id);  function openModal(){ modal.classList.add('show'); modal.setAttribute('aria-hidden','false'); }
+  function closeModal(){ modal.classList.remove('show'); modal.setAttribute('aria-hidden','true'); }  btn.addEventListener('click', openModal);
   cancelar.addEventListener('click', closeModal);
-  modal.addEventListener('click', (e)=>{ if(e.target === modal) closeModal(); });
-
-  guardar.addEventListener('click', async ()=>{
+  modal.addEventListener('click', (e)=>{ if(e.target === modal) closeModal(); });  guardar.addEventListener('click', async ()=>{
     const payload = {
       nombre: $('rc_nombre').value.trim(),
       pin: $('rc_pin').value.trim(),
       salarioDiario: Number($('rc_salario').value),
-      fechaIngreso: $('rc_ingreso').value ? new Date($('rc_ingreso').value).toISOString() : null,
-
-      // nuevos campos de configuración
+      fechaIngreso: $('rc_ingreso').value ? new Date($('rc_ingreso').value).toISOString() : null,      // nuevos campos de configuración
       horas_diarias: $('rc_horas_diarias').value ? Number($('rc_horas_diarias').value) : null,
       dias_laborables: $('rc_dias_laborables').value.trim() || null,
       horario_entrada: $('rc_hora_entrada').value || null,
       horario_salida: $('rc_hora_salida').value || null,
-    };
-
-    // Validaciones básicas
+    };    // Validaciones básicas
     if(!payload.nombre || !payload.pin || !payload.salarioDiario){
       alert('Nombre, PIN y Sueldo diario son obligatorios.');
       return;
-    }
-
-    try{
+    }    try{
       const res = await fetch(API_URL + '/api/empleados', {
         method:'POST',
         headers:{ 'Content-Type':'application/json' },
