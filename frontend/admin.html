@@ -224,6 +224,172 @@
     }
 
   </script>
+<!-- MODAL EMPLEADOS START -->
+<style>
+  /* Botón flotante */
+  .fab-add-emp {
+    position: fixed; right: 24px; bottom: 24px;
+    width: 56px; height: 56px; border-radius: 9999px;
+    display: flex; align-items: center; justify-content: center;
+    background: #2563eb; color: white; font-size: 28px;
+    box-shadow: 0 10px 15px rgba(0,0,0,.15); cursor: pointer; z-index: 9999;
+  }
+  .fab-add-emp:hover { filter: brightness(1.05); }
+
+  /* Modal */
+  .emp-modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,.35);
+    display: none; align-items: center; justify-content: center; z-index: 9998;
+  }
+  .emp-modal {
+    width: 100%; max-width: 560px; background: white; border-radius: 16px; padding: 20px;
+    box-shadow: 0 10px 20px rgba(0,0,0,.25);
+  }
+  .emp-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .emp-row > div { display: flex; flex-direction: column; gap: 6px; }
+  .emp-modal h2 { font-size: 20px; font-weight: 700; margin-bottom: 10px; }
+  .emp-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+  .btn { border-radius: 8px; padding: 10px 14px; border: 1px solid #e5e7eb; cursor: pointer; }
+  .btn-primary { background: #2563eb; color: #fff; border-color: #2563eb; }
+  .text-sm { font-size: 12px; color: #6b7280; }
+</style>
+
+<!-- FAB -->
+<div id="fabAddEmp" class="fab-add-emp" title="Agregar empleado">＋</div>
+
+<!-- Modal -->
+<div id="empModalBackdrop" class="emp-modal-backdrop" aria-hidden="true">
+  <div class="emp-modal" role="dialog" aria-modal="true">
+    <h2>Agregar empleado</h2>
+    <p class="text-sm">Completa los datos mínimos. (Después podremos editar horarios/restricciones.)</p>
+
+    <div class="emp-row" style="margin-top:10px">
+      <div>
+        <label>Nombre</label>
+        <input id="emp_nombre" class="form-control" placeholder="Ej. Juan Pérez"/>
+      </div>
+      <div>
+        <label>PIN</label>
+        <input id="emp_pin" class="form-control" placeholder="Ej. 1234" />
+      </div>
+    </div>
+
+    <div class="emp-row" style="margin-top:10px">
+      <div>
+        <label>Sueldo diario</label>
+        <input id="emp_salario" type="number" class="form-control" placeholder="Ej. 300" />
+      </div>
+      <div>
+        <label>Fecha de ingreso</label>
+        <input id="emp_fecha" type="date" class="form-control" />
+      </div>
+    </div>
+
+    <details style="margin-top:12px">
+      <summary style="cursor:pointer">Opcionales (horarios / días laborables)</summary>
+      <div class="emp-row" style="margin-top:10px">
+        <div>
+          <label>Entrada (hh:mm)</label>
+          <input id="emp_hora_in" class="form-control" placeholder="09:00" />
+        </div>
+        <div>
+          <label>Salida (hh:mm)</label>
+          <input id="emp_hora_out" class="form-control" placeholder="17:00" />
+        </div>
+      </div>
+      <div style="margin-top:10px">
+        <label>Días laborables</label>
+        <input id="emp_dias" class="form-control" placeholder="L, M, X, J, V, S" />
+      </div>
+      <div style="margin-top:10px">
+        <label>Horas diarias</label>
+        <input id="emp_horas_d" type="number" class="form-control" placeholder="8" />
+      </div>
+    </details>
+
+    <div id="emp_msg" class="text-sm" style="min-height:18px;margin-top:8px"></div>
+
+    <div class="emp-actions">
+      <button id="btnEmpCancel" class="btn">Cancelar</button>
+      <button id="btnEmpSave" class="btn btn-primary">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = (s) => document.querySelector(s);
+  const api = (window.API_URL || 'https://reloj-checador-se.uc.r.appspot.com') + '/api';
+
+  function openModal(){ $('#empModalBackdrop').style.display = 'flex'; }
+  function closeModal(){ $('#empModalBackdrop').style.display = 'none'; $('#emp_msg').textContent=''; }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // Si existe la caja grande de "Agregar empleado" arriba, la escondemos para usar el modal
+    const titulo = Array.from(document.querySelectorAll('h5,h4,h3,h2,h1')).find(h => /agregar empleado/i.test(h.textContent||''));
+    if (titulo) {
+      const card = titulo.closest('.card, .shadow, form, div');
+      if (card) card.style.display = 'none';
+    }
+
+    $('#fabAddEmp').addEventListener('click', openModal);
+    $('#btnEmpCancel').addEventListener('click', closeModal);
+
+    $('#btnEmpSave').addEventListener('click', async () => {
+      const nombre = $('#emp_nombre').value.trim();
+      const pin = $('#emp_pin').value.trim();
+      const salarioDiario = Number($('#emp_salario').value);
+      const fechaIngreso = $('#emp_fecha').value ? new Date($('#emp_fecha').value).toISOString() : null;
+
+      if (!nombre || !pin || !salarioDiario || !fechaIngreso) {
+        $('#emp_msg').textContent = 'Completa nombre, PIN, sueldo y fecha de ingreso.';
+        return;
+      }
+
+      // Campos opcionales (el backend los puede ignorar si aún no los soporta)
+      const opcionales = {
+        horario_entrada: $('#emp_hora_in').value.trim() || null,
+        horario_salida : $('#emp_hora_out').value.trim() || null,
+        dias_laborables: $('#emp_dias').value.trim() || null,
+        horas_diarias  : $('#emp_horas_d').value ? Number($('#emp_horas_d').value) : null,
+      };
+
+      $('#btnEmpSave').disabled = true;
+      $('#emp_msg').textContent = 'Guardando…';
+
+      try {
+        // 1) Alta mínima (lo que hoy acepta el backend)
+        const r1 = await fetch(api + '/empleados', {
+          method:'POST',
+          headers:{ 'Content-Type':'application/json' },
+          body: JSON.stringify({ nombre, pin, salarioDiario, fechaIngreso })
+        });
+        const j1 = await r1.json();
+        if (!r1.ok) throw new Error(j1?.error || 'Error creando empleado');
+
+        // 2) Intento guardar opcionales si el backend ya lo soporta (silencioso si 404)
+        if (j1?.id) {
+          try {
+            await fetch(api + '/empleados/' + j1.id + '/config', {
+              method:'PUT',
+              headers:{ 'Content-Type':'application/json' },
+              body: JSON.stringify(opcionales)
+            });
+          } catch(_e){ /* ignoramos si no existe */ }
+        }
+
+        $('#emp_msg').textContent = 'Empleado creado.';
+        setTimeout(()=>{ closeModal(); location.reload(); }, 800);
+      } catch(e) {
+        $('#emp_msg').textContent = e.message || 'Error guardando empleado.';
+      } finally {
+        $('#btnEmpSave').disabled = false;
+      }
+    });
+  });
+})();
+</script>
+<!-- MODAL EMPLEADOS END -->
 </body>
 </html>
 
