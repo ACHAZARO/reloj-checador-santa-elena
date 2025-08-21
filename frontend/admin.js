@@ -41,3 +41,26 @@ document.addEventListener("DOMContentLoaded", () => {
     }catch(err){ console.error(err); alert("No se pudo conectar con el servidor."); }
   });
 });
+
+// --- parche: ocultar formulario legacy (inputs arriba) ---
+document.addEventListener("DOMContentLoaded", () => {
+  try {
+    // encuentra el botón "Agregar" que NO está dentro del modal nuevo
+    const legacyBtn = [...document.querySelectorAll('button')]
+      .find(b => b.textContent.trim().toLowerCase() === 'agregar' && !b.closest('#addModal'));
+
+    if (legacyBtn) {
+      // intenta ocultar el contenedor grande del bloque legacy
+      let box = legacyBtn.closest('div');
+      // si el contenedor inmediato es muy pequeño, sube un nivel
+      if (box && box.offsetHeight < 80 && box.parentElement) box = box.parentElement;
+      if (box) box.style.display = 'none';
+      // también intenta ocultar el título "Agregar empleado" si existe
+      const h = [...document.querySelectorAll('h1,h2,h3,strong')]
+        .find(el => /agregar empleado/i.test(el.textContent) && !el.closest('#addModal'));
+      if (h) (h.closest('div') || h).style.display = 'none';
+    }
+  } catch (e) {
+    console.warn('No pude ocultar el formulario legacy:', e);
+  }
+});
