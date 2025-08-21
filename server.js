@@ -214,7 +214,13 @@ app.get('/api/empleados', async (req, res) => {
 app.post('/api/empleados', async (req, res) => {
   try {
     const { nombre, pin, salarioDiario, fechaIngreso } = req.body;
-    if (!nombre || !pin || !salarioDiario) {
+  
+// Campos de horario con valores por defecto
+const dias_laborables = req.body.dias_laborables ?? 'L, M, X, J, V, S';
+const horario_entrada = req.body.horario_entrada ?? '09:00';
+const horario_salida  = req.body.horario_salida  ?? '17:00';
+const horas_diarias   = Number(req.body.horas_diarias ?? 8);
+  if (!nombre || !pin || !salarioDiario) {
       return res.status(400).json({ error: 'Datos incompletos' });
     }
     const pinSnap = await firestore.collection('empleados')
@@ -222,16 +228,21 @@ app.post('/api/empleados', async (req, res) => {
     if (!pinSnap.empty) {
       return res.status(409).json({ error: 'PIN ya existe' });
     }
-    const nuevoEmpleado = {
-      nombre,
-      pin,
-      basePayType : 'daily',
-      basePay     : parseFloat(salarioDiario),
-      status      : 'active',
-      deleted     : false,
-      fechaIngreso: fechaIngreso ? new Date(fechaIngreso) : new Date(),
-      createdAt   : new Date(),
-    };
+const nuevoEmpleado = {
+  nombre,
+  pin,
+  basePayType: 'daily',
+  basePay: Number(salarioDiario),
+  status: 'active',
+  deleted: false,
+  fechaIngreso: fechaIngreso ? new Date(fechaIngreso) : new Date(),
+  createdAt: new Date(),
+  // ⬇️ nuevos campos de horario
+  dias_laborables,
+  horario_entrada,
+  horario_salida,
+  horas_diarias,
+};
     const docRef = await firestore.collection('empleados').add(nuevoEmpleado);
     res.status(201).json({ id: docRef.id, ...nuevoEmpleado });
   } catch (err) {
